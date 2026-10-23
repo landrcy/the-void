@@ -1,0 +1,18 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#05020d"><canvas id="game"></canvas>
+<script src="../assets/core.js"></script><script src="../assets/gen.js"></script><script src="../assets/planets.js"></script><script src="../assets/planets2.js"></script>
+<script>
+var V=VOID; V.Gen.init(5);
+function B(o){o.id='sheet'+Math.random();o.seed=o.seed||Math.floor(Math.random()*1e9);o.sys={tint:[255,244,220],hz:1100};o.orbit=null;return o}
+var items=[
+ B({type:'earth',r:38,atm:'#8fc4ff',cloudAmt:.45,tilt:.41,seed:20241}),B({type:'ocean',r:34,atm:'#7fb8ff',cloudAmt:.5,seed:3}),B({type:'jungle',r:32,atm:'#9fe0c8',cloudAmt:.5,seed:4}),B({type:'desert',palKey:'desertA',r:32,atm:'#f0b070',seed:5}),
+ B({type:'rocky',palKey:'rockyG',r:30,seed:6}),B({type:'ice',palKey:'iceA',r:32,atm:'#b0dcff',cloudAmt:.3,seed:7}),B({type:'lava',r:32,seed:8,atm:'#ff7a3a'}),B({type:'crystal',palKey:'crystalA',r:32,seed:9}),
+ B({type:'gas',palKey:'gasJ',r:50,seed:10,atm:'#e8c89a'}),B({type:'gas',palKey:'gasS',r:40,seed:11,atm:'#e8dca0',ring:{in:1.4,out:2.5,sq:.3,ang:-.35,cols:['#6b5a46','#a8957a','#d6c3a0','#efe3c6']}}),B({type:'icegas',palKey:'gasN',r:38,seed:12,atm:'#8fb8ff',ring:{in:1.5,out:2.1,sq:.25,ang:.4,cols:['#4a5a7a','#7f93b8','#b6c8e6','#e0ecfa']}}),B({type:'venus',r:30,seed:13,atm:'#ffd890',cloudAmt:1}),
+ B({type:'moon',palKey:'moonG',r:20,seed:14}),B({type:'asteroid',palKey:'rockyB',r:20,seed:15,elong:1.3,rot:.5}),B({type:'comet',palKey:'iceA',r:12,seed:16,elong:1.2}),B({type:'ruins',palKey:'rockyU',r:22,seed:17,elong:1.5,rot:.3}),
+ B({type:'donut',palKey:'ocean',r:36,seed:18}),B({type:'cube',palKey:'jungle',r:34,seed:19}),B({type:'ringworld',r:46,seed:20}),B({type:'station',r:30,seed:21}),B({type:'wreck',r:28,seed:22}),B({type:'star',isStar:true,skind:'yellow',r:26,seed:23}),B({type:'star',isStar:true,skind:'giant',r:40,seed:24}),B({type:'star',isStar:true,skind:'neutron',r:6,seed:25}),B({type:'bh',r:16,seed:26}),B({type:'star',isStar:true,skind:'blue',r:24,seed:27}),
+];
+var cols=6,cw=Math.floor(V.W/cols),ch=Math.floor(V.H/Math.ceil(items.length/cols));
+function draw(){var g=V.ctx;g.fillStyle='#05020d';g.fillRect(0,0,V.W,V.H);V.planets.frameBudget(1e9);
+ items.forEach(function(b,i){var x=(i%cols)*cw+cw/2,y=Math.floor(i/cols)*ch+ch/2;var L={ang:-2.3,col:[255,244,224],k:1};
+ var R=Math.min(b.r, ch*.4); if(b.type==='comet'){V.planets.drawBody(g,b,x-20,y,R,V.time,{ang:0,k:.6});} else V.planets.drawBody(g,b,x,y,R,V.time,L);});}
+V.hooks.draw=draw;V.hooks.update=function(){};V.start();
+</script>

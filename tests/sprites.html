@@ -1,0 +1,12 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#05020d"><canvas id="game"></canvas>
+<script src="../assets/core.js"></script><script src="../assets/sprites.js"></script>
+<script>var V=VOID,S=V.spr;S.astro=S.astronaut();S.shipFrames=S.ship();
+var q=[S.quad(V.rng(1),{len:8,h:5,legH:3,ear:4,tail:1,col:['#6a5040','#9a7a5a','#d8c0a0','#f0e8dc'],belly:1}),S.quad(V.rng(1),{len:14,h:6,legH:6,neck:4,ear:2,horn:3,col:['#6a4a2a','#a07a46','#d8b078','#f0e0c0']}),S.quad(V.rng(1),{len:12,h:6,legH:5,hump:2,neck:5,col:['#a07a40','#d0a860','#ecd090','#f8e8b8']})];
+var bi=S.bird(['#3a5a9a','#7aa0e0','#d8e8ff']);var bf=S.butterfly(['#c04df0','#ffb0e0']);var fs=S.fish(['#2a5a8a','#4aa0d0','#c8f0ff']);var jl=S.jelly(['#a04df0','#e090ff','#ffe0ff']);var bg=S.bug(['#2a6a4a','#4aa070','#a0e0b0']);var pg=S.penguin();var wh=S.whale();
+function draw(){var g=V.ctx;g.fillStyle='#3a5aa0';g.fillRect(0,0,V.W,V.H);var x=10,y=10;
+ for(var k in S.astro){g.drawImage(S.astro[k],x,y);x+=14}
+ x=10;y=40;for(var i=0;i<32;i+=2){g.drawImage(S.shipFrames[i],x,y);x+=18;if(x>V.W-20){x=10;y+=20}}
+ g.drawImage(S.landedShip(0),10,100);g.drawImage(S.landedShip(1),50,100);
+ x=100;y=100;[].concat(q[0],q[1],q[2],bi,bf,fs,jl,bg,pg).forEach(function(c){g.drawImage(c,x,y);x+=c.width+4});
+ g.drawImage(wh,10,130);}
+V.hooks.draw=draw;V.hooks.update=function(){};V.start();</script>
