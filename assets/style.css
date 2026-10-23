@@ -1,0 +1,19 @@
+/* The Void — pixel UI. Palette: black #05020d, deep violet #2a0f4d, magenta-purple #c04df0, lavender #efe6ff */
+@font-face { font-family: 'VT323'; src: url(fonts/VT323-Regular.ttf) format('truetype'); font-display: swap; }
+:root { --S: 4; --ink: #05020d; --violet: #2a0f4d; --mag: #c04df0; --lav: #efe6ff; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #05020d; overflow: hidden; overscroll-behavior: none; touch-action: none; }
+body { font-family: 'VT323', ui-monospace, monospace; color: var(--lav); -webkit-font-smoothing: none; user-select: none; -webkit-user-select: none; }
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; image-rendering: pixelated; }
+#game { position: fixed; left: 0; top: 0; display: block; z-index: 0; background: #05020d; }
+#ui { position: fixed; top: calc(2px * var(--S) + env(safe-area-inset-top)); right: calc(2px * var(--S) + env(safe-area-inset-right)); display: flex; gap: calc(2px * var(--S)); z-index: 3; }
+.pbtn { appearance: none; border: 0; padding: 0; margin: 0; background: none; cursor: pointer; width: calc(13px * var(--S)); height: calc(13px * var(--S)); line-height: 0; }
+.pbtn[hidden] { display: none; }
+.pbtn .ico { width: 100%; height: 100%; display: block; }
+.pbtn:hover .ico, .pbtn:focus-visible .ico, .pbtn.on .ico { filter: brightness(1.6); }
+.pbtn:focus-visible { outline: var(--S, 4)px solid #c04df0; outline-offset: 0; outline-width: calc(1px * var(--S)); }
+#pad { position: fixed; left: 0; right: 0; bottom: calc(3px * var(--S) + env(safe-area-inset-bottom)); display: flex; justify-content: space-between; padding: 0 calc(3px * var(--S)); z-index: 2; pointer-events: none; }
+#pad[hidden] { display: none; }
+#pad .side { display: flex; gap: calc(3px * var(--S)); pointer-events: auto; }
+.tbtn { width: calc(19px * var(--S)); height: calc(19px * var(--S)); touch-action: none; }
