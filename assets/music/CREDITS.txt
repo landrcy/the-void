@@ -1,0 +1,15 @@
+THE VOID — MUSIC CREDITS
+Both tracks are real recordings released under CC0 1.0 (public domain dedication).
+No attribution is legally required; credit is given anyway.
+
+1) "Persistence" — cinameng (James Gargette)
+   Source:  https://opengameart.org/content/persistence
+   License: CC0 1.0  https://creativecommons.org/publicdomain/zero/1.0/
+   Files:   persistence.ogg, persistence.mp3 (re-encoded from the original MP3, unchanged otherwise)
+
+2) "Cathedral in the forest (ambient loop)" — congusbongus
+   Source:  https://opengameart.org/content/cathedral-in-the-forest-ambient-loop
+   License: CC0 1.0  https://creativecommons.org/publicdomain/zero/1.0/
+   Files:   forest.ogg, forest.mp3 (re-encoded from the original OGG, unchanged otherwise)
+
+No sound effects are used (no suitable real recordings were added).
