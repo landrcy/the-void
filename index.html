@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Void</title>
+<meta name="description" content="The Void — a quiet pixel space exploration game. Walk a small world, board your ship, fly a randomly generated galaxy and land on everything.">
+<meta name="theme-color" content="#05020d">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Void">
+<meta property="og:title" content="The Void">
+<meta property="og:description" content="A quiet pixel space exploration game. Start on Earth, board your ship, fly a randomly generated galaxy and land on everything.">
+<meta property="og:image" content="https://landrcy.github.io/the-void/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Void">
+<meta name="twitter:description" content="A quiet pixel space exploration game. Start on Earth, board your ship, fly a randomly generated galaxy and land on everything.">
+<meta name="twitter:image" content="https://landrcy.github.io/the-void/assets/og.png">
+<meta name="music-credit" content="Music: Persistence by cinameng (CC0) and Cathedral in the forest by congusbongus (CC0), via OpenGameArt.org">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<canvas id="game" aria-hidden="true"></canvas>
+<h1 class="sr">The Void</h1>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<div id="ui" aria-label="Controls"></div>
+<div id="pad" aria-hidden="false"></div>
+<noscript><p style="color:#fff;font-family:monospace;padding:1em">The Void needs JavaScript.</p></noscript>
+<script src="assets/core.js"></script>
+<script src="assets/gen.js"></script>
+<script src="assets/planets.js"></script>
+<script src="assets/planets2.js"></script>
+<script src="assets/sprites.js"></script>
+<script src="assets/decor.js"></script>
+<script src="assets/biomes.js"></script>
+<script src="assets/surface.js"></script>
+<script src="assets/surface2.js"></script>
+<script src="assets/surface3.js"></script>
+<script src="assets/title.js"></script>
+<script src="assets/space.js"></script>
+<script src="assets/ui.js"></script>
+<script src="assets/save.js"></script>
+<script src="assets/music.js"></script>
+<script src="assets/game.js"></script>
+<script>VOID.game.boot();VOID.start();</script>
+</body>
+</html>
