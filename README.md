@@ -41,7 +41,7 @@ ship's look (4 cosmetic tiers) and suit upgrades change the astronaut. The admin
 infinite fuel, skip story, teleport (Earth, Mars, Jupiter, generated system, huge, ringworld, Dyson, black hole…), reveal map,
 warp now, spawn aliens / inhabitants, weather, time of day and game speed.
 
-Top-right buttons: mute music, galaxy map, upgrades, scan, new random galaxy (dice), fullscreen, back to title.
+Top-right buttons: mute (music + sound effects), galaxy map, upgrades, scan, new random galaxy (dice), fullscreen, back to title.
 The title has a reset icon (bottom left) with a ✓ / ✗ confirm. Touch devices get an on-screen pad (force it with `?touch`).
 Progress saves to localStorage (`void:v2`; an old `void:v1` save is migrated with the story marked done).
 `prefers-reduced-motion` turns off screen shake and fast effects.
@@ -63,6 +63,11 @@ Progress saves to localStorage (`void:v2`; an old `void:v1` save is migrated wit
 The music starts on first interaction, fades in, crossfades between the two tracks, pauses when the tab is hidden and
 remembers mute. See `assets/music/CREDITS.txt`.
 
+## Sound effects
+Real CC0 samples from Kenney.nl (Sci-Fi Sounds, Interface Sounds, Impact Sounds, Digital Audio), see `assets/sfx/CREDITS.txt`.
+`assets/sfx.js` preloads them into Web Audio buffers (base64 bundle on `file://`), mixes them quietly under the music,
+throttles repeats, fades loops (thrust, jetpack, laser) in and out, and is silenced by the mute button. `?nosfx` disables them.
+
 ## Tests
 Requires Node and puppeteer-core with Chrome (`PUPPETEER=/path/to/puppeteer-core CHROME=/path/to/chrome`).
 - `node tests/run-all.js` — console errors at 1280/1920/390, no horizontal overflow, fps in title/Earth/space/gas giant/black hole,
@@ -76,3 +81,26 @@ Requires Node and puppeteer-core with Chrome (`PUPPETEER=/path/to/puppeteer-core
 ## Tooltips (v3)
 Hover any icon (or long-press it on touch, or Tab/arrow to it with the keyboard) to get a short description in a dark pixel panel set in VT323 (`assets/tips.js`, `#tip` in `style.css`). The panel shows the name, a one-line description, what state it's in, the cost with resource icons (anything you can't afford is red), and what it needs (for example which upgrade or drive part). Tooltips cover upgrades, admin controls, the top-right buttons, HUD resources, fuel and status icons, galaxy map systems and pins, inhabitant trades and alien ships. They appear after a short delay, move to stay on screen at 390 px wide, and only redraw when their content changes. The scene itself stays free of text.
 Preview: `node tests/screenshots-v3.js` writes to `/workspace/preview/the-void/v3/`.
+
+## Ship growth (v4)
+Your ship grows through five hulls: scout → frigate → cruiser → capital → mothership. You buy them on the upgrade screen (the FLEET tab), and each one is a bigger pixel sprite with more modules, lights, engines, turrets and hangars. Fleet upgrades: engine banks, warp core I–III, cargo hold, shield bubble, deflector, hangar (mini‑drones that fetch drops), mining beam array, refinery, colony pod (press K on a landed world) and a Dyson swarm (press K near the star of a colonised system). In the admin panel (L), the SHIP row sets the stage. You can also use `?stage=N`.
+
+## Black holes and THE MAW
+Black holes are drawn by `assets/bhfx.js`:
+- a lensed starfield with a ripple near the horizon;
+- a spinning, dithered heat-banded disk with a Doppler-bright side, plus a photon ring and polar jets;
+- gravity-wave rings;
+- capped particles that spiral in and get spaghettified, and debris that is torn apart;
+- ship stretch, chromatic shift and shake near the horizon, with a deep rumble.
+
+Use `?oldbh` to see the old look.
+
+THE MAW is a mega black hole at the galaxy centre. It is a landmark with a tooltip on the galaxy map, and its pull is felt from far away. Anything smaller than a capital ship gets pushed back by the tides. Falling through the horizon gives you resources and a free hull upgrade plus a halo (the first time), then a white hole throws you out near home. Admin teleport: MAW.
+Previews: `node tests/screenshots-v4.js`.
+
+## Colonization (v5)
+- **Mine first:** hold Down / X while standing to drill (hole stays, strata change by depth, pockets pay out ore by body type). F (or touch laser) is a hand mining laser: it cuts veins in range, or cuts rock. Q scans and x-rays ore pockets; ore glints show on the surface.
+- **Build (B / K / touch build):** founds a colony if you have the Colony Pod, then places auto-drills. Near a TOWN+ colony with MEGA RIG it builds a 190 px planet rig, which you can see from orbit. In space near a star with the Dyson module it starts a Dyson swarm.
+- **Colonies grow** OUTPOST → SETTLEMENT → TOWN → CITY → ARCOLOGY. **Dysons assemble** SWARM → RING → LATTICE → SHELL → SPHERE (48 segments) and produce ENERGY, which pays for FORGE, NOVA DRIVE and STAR LIFTER (upgrade tab 3).
+- Production is delta-time based. Offline progress is capped at 8 h, runs at 50%, and is capped at 600 per resource (20000 energy). Old saves migrate (colv 2).
+- The admin panel has buttons to grant, build here, instant-build and add energy. Tests: `node tests/colony-test.js` (also run as section 14 of run-all). Previews: `node tests/screenshots-v5.js`.

@@ -17,6 +17,7 @@
 <meta name="twitter:title" content="The Void">
 <meta name="twitter:description" content="A quiet pixel space exploration game. Start on Earth, board your ship, fly a randomly generated galaxy and land on everything.">
 <meta name="twitter:image" content="https://landrcy.github.io/the-void/assets/og.png">
+<meta name="sfx-credit" content="Sound effects: Kenney.nl Sci-Fi Sounds, Interface Sounds, Impact Sounds and Digital Audio (CC0), www.kenney.nl">
 <meta name="music-credit" content="Music: Persistence by cinameng (CC0) and Cathedral in the forest by congusbongus (CC0), via OpenGameArt.org">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
@@ -46,10 +47,14 @@
 <script src="assets/story.js"></script>
 <script src="assets/aliens.js"></script>
 <script src="assets/galmap.js"></script>
+<script src="assets/fleet.js"></script>
+<script src="assets/bhfx.js"></script>
+<script src="assets/colony.js"></script>
 <script src="assets/ui.js"></script>
 <script src="assets/save.js"></script>
 <script src="assets/music.js"></script>
 <script src="assets/game.js"></script>
-<script>VOID.game.boot();VOID.start();</script>
+<script src="assets/sfx.js"></script>
+<script>VOID.game.boot();VOID.sfx.init();VOID.start();</script>
 </body>
 </html>
