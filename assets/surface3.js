@@ -19,7 +19,8 @@
     var pl = Su.pl; pl.vx = pl.vy = 0; pl.face = -1; pl.hidden = false; pl.ground = true; pl.swim = false; pl.coyote = pl.jbuf = 0; pl.t0 = 0;
     if (V.q.has('night')) { Su.fixedTod = 0; w.tod = 0; } else if (V.q.has('day')) { Su.fixedTod = .3; w.tod = .3; }
     var cam = Su.cam;
-    if (o.arrive) { Su.mode = 'arrive'; sh.alt = 360; sh.vy = 0; pl.hidden = true; pl.x = spX; pl.y = gAt(w, spX); Su.ascent = 0; }
+    if (o.crash && Su.startCrash) { Su.startCrash(w, o); }
+    else if (o.arrive) { Su.mode = 'arrive'; sh.alt = 360; sh.vy = 0; pl.hidden = true; pl.x = spX; pl.y = gAt(w, spX); Su.ascent = 0; }
     else if (o.resume) { Su.mode = 'play'; pl.x = o.resume.x; pl.y = Math.max(o.resume.y, gAt(w, o.resume.x)); if (o.resume.tod != null) w.tod = o.resume.tod; sh.open = 1; }
     else { Su.mode = 'play'; pl.x = spX + (o.dx != null ? o.dx : -34); pl.y = gAt(w, pl.x); sh.open = 1; }
     cam.x = (Su.mode === 'arrive' ? spX : pl.x); cam.y = gAt(w, cam.x) + (Su.mode === 'arrive' ? 60 : 8);
@@ -31,6 +32,7 @@
     Su.landed = true;
     w.critters.forEach(function (c) { if (Su.disc['c:' + c.type + ':' + w.id]) c.scanned = true; }); w.items.forEach(function (it) { if (it.scan && Su.disc['m:' + w.id]) it.scanned = true; });
   };
+  Su.isHint = function (h) { return !!h; };
   Su.leave = function () { Su.cur = null; Su.mode = 'none'; };
   Su.setTod = function (t) { if (Su.cur) Su.cur.tod = t; };
 
@@ -41,30 +43,35 @@
   function scanFx(x, y, col) { for (var i = 0; i < 14; i++) { var a = i / 14 * TAU; Su.parts.push({ x: x, y: y, vx: Math.cos(a) * 34, vy: Math.sin(a) * 34, life: 0, max: .7, col: i % 2 ? '#ffffff' : (col || '#c04df0'), g: 0, drag: 3 }); } }
 
   /* ---------- player ---------- */
-  var GRAV_EXTRA = 1.0;
+  var GRAV_EXTRA = 1.0, NOMODS = { run: 1, jump: 1, dbl: false, jet: false, board: false };
+  Su.mods = NOMODS;
   function stepPlayer(w, dt, ctl) {
-    var pl = Su.pl, g = w.g, inx = ctl ? V.input.x : 0, jump = ctl && V.input.jump;
+    var pl = Su.pl, g = w.g, inx = ctl ? V.input.x : 0, jump = ctl && V.input.jump, md = Su.mods || NOMODS;
     var depth = w.wl - pl.y, swim = depth > 7 && w.wl > -999; pl.swim = swim;
-    var acc = swim ? 260 : (pl.ground ? 700 : 340), sp = swim ? 34 : (w.airless || g < 220 ? 58 : 62);
+    var acc = swim ? 260 : (pl.ground ? 700 : 340), sp = (swim ? 34 : (w.airless || g < 220 ? 58 : 62)) * (swim ? 1 : md.run * (md.board ? 2.1 : 1));
     if (pl.ground && !ctl) inx = 0;
     var tv = inx * sp; pl.vx += clamp(tv - pl.vx, -acc * dt, acc * dt); if (inx) pl.face = inx > 0 ? 1 : -1;
     if (ctl && V.input.jumpPressed) pl.jbuf = .14; pl.jbuf = Math.max(0, pl.jbuf - dt); pl.coyote = pl.ground ? .1 : Math.max(0, pl.coyote - dt);
-    var jv = Math.sqrt(2 * g * 30 * (w.airless ? 1.45 : 1)); if (jv > 230) jv = 230; if (jv < 70) jv = 70;
+    var jv = Math.sqrt(2 * g * 30 * (w.airless ? 1.45 : 1)); if (jv > 230) jv = 230; if (jv < 70) jv = 70; jv *= md.jump;
     if (swim) {
       var targ = jump ? 40 : -16; if (ctl && V.input.y < 0) targ = -34; pl.vy += (targ - pl.vy) * Math.min(1, 3.5 * dt); if (depth < 15 && jump && pl.jbuf > 0) { pl.vy = Math.max(pl.vy, 110); pl.jbuf = 0; }
     } else {
+      if (pl.ground) { pl.dblUsed = false; pl.jetF = 1.4; }
       if (pl.jbuf > 0 && pl.coyote > 0) { pl.vy = jv; pl.jbuf = 0; pl.coyote = 0; pl.ground = false; }
+      else if (pl.jbuf > 0 && md.dbl && !pl.dblUsed && !pl.ground) { pl.vy = jv * .9; pl.jbuf = 0; pl.dblUsed = true; puff(pl.x, pl.y, 6, '#e8f0ff', 6, -10); }
+      if (md.jet && jump && !pl.ground && pl.vy < 60 && pl.jetF > 0 && (pl.dblUsed || !md.dbl || pl.vy < 0)) { pl.vy = Math.min(80, pl.vy + 900 * dt); pl.jetF -= dt; pl.jetOn = .1; if (Math.random() < dt * 40) puff(pl.x - pl.face * 3, pl.y + 3, 1, '#ffb040', 2, -30); }
       pl.vy -= g * dt; if (pl.vy > 0 && !jump) pl.vy -= g * dt * GRAV_EXTRA; if (pl.vy < -420) pl.vy = -420;
     }
     // horizontal with step-up
     var nx = pl.x + pl.vx * dt, hg = gAt(w, nx + (pl.vx > 0 ? 2 : -2));
-    if (hg - pl.y > 2.6) { pl.vx = 0; nx = pl.x; }
+    if (hg - pl.y > (md.board ? 5 : 2.6)) { pl.vx = 0; nx = pl.x; }
     pl.x = nx;
     var ny = pl.y + pl.vy * dt, gy = gAt(w, pl.x);
     if (pl.ground && !swim && pl.vy <= 0 && pl.y - gy < 6 && pl.y - gy >= -3) { ny = gy; pl.vy = 0; }
     if (ny <= gy) { if (!pl.ground && pl.vy < -190 && Su.onThud) Su.onThud(-pl.vy); if (!pl.ground && pl.vy < -60) puff(pl.x, gy, 4, Su.groundCol(w, pl.x), 8, 10); ny = gy; if (pl.vy < 0) pl.vy = 0; pl.ground = true; } else pl.ground = false;
     pl.y = ny; pl.x = norm(w, pl.x);
-    if (w.liquid === 'lava' && w.wl - pl.y > 3 && w.wl > -999) Su.burn();
+    if (md.board && w.wl > -999 && pl.y < w.wl && !jump && ctl) { pl.y = w.wl; pl.vy = Math.max(0, pl.vy); pl.ground = true; pl.swim = false; }
+    if (w.liquid === 'lava' && w.wl - pl.y > 3 && w.wl > -999 && !(V.prog && V.prog.cheat.god)) Su.burn();
   }
   Su.groundCol = function (w, x) { var b = biomeAt(w, x); return b.pal && b.pal.dust ? b.pal.dust : V.css(V.hex(b.top[2] || b.top[1])); };
   Su.burn = function () { if (Su.mode !== 'play' || Su.burning) return; Su.burning = true; var pl = Su.pl; puff(pl.x, pl.y + 6, 16, '#ff9030', 10, 40); V.game.fadeOut(.5, function () { var w = Su.cur; pl.x = Su.ship.x - 34; pl.y = gAt(w, pl.x); pl.vx = pl.vy = 0; Su.burning = false; V.game.fadeIn(.6); }); };
@@ -132,7 +139,7 @@
   };
   /* ---------- player / ship drawing ---------- */
   Su.drawPlayer = function (sg, w, cam, GY0, t) {
-    var pl = Su.pl; if (pl.hidden) return; var fr = S.astro, W = V.W, f;
+    var pl = Su.pl; if (pl.hidden) return; var sk = V.prog ? V.prog.suitKey() : '', fr = sk.indexOf('1') >= 0 ? S.suitFrames(sk) : S.astro, W = V.W, f;
     var moving = Math.abs(pl.vx) > 8 && pl.ground;
     if (pl.swim) f = fr.fall; else if (!pl.ground) f = pl.vy > 10 ? fr.jump : fr.fall; else if (moving) f = fr['w' + (Math.floor(pl.anim * 1.0) & 3)]; else f = (Math.floor(t * .7) % 5 === 0 && (t % 1.43) < .25) ? fr.idle2 : fr.idle;
     if (pl.face < 0) f = Su.flipped(f);
@@ -145,7 +152,7 @@
     for (var j = 0; j < len; j++) { var k = j / len, hw = Math.max(0, Math.round(wid * (1 - k * .8))), col = k < .2 ? flameCols[0] : k < .5 ? flameCols[1] : k < .8 ? flameCols[2] : flameCols[3]; if (V.bayer(j + fl, x) > 1 - k * .9 && j > 2) continue; sg.fillStyle = col; sg.fillRect(x - hw, y + j, hw * 2 + 1, 1); }
   }
   Su.drawShip = function (sg, w, cam, GY0, t) {
-    var sh = Su.ship, W = V.W, gy = gAt(w, sh.x), sx = Math.round(wdx(sh.x, cam.x, w.WW) + W / 2), spr = S.landedShip(sh.open > .5), top = Math.round(GY0 - (gy + sh.alt - cam.y) - 20);
+    var sh = Su.ship, W = V.W, gy = gAt(w, sh.x), sx = Math.round(wdx(sh.x, cam.x, w.WW) + W / 2), spr = S.landedShip(sh.open > .5, V.prog ? V.prog.shipTier() : 0), top = Math.round(GY0 - (gy + sh.alt - cam.y) - 20);
     if (sx < -60 || sx > W + 60) return; sg.drawImage(spr, sx - 17, top);
     if (sh.open > .02 && sh.open < .98) { sg.fillStyle = '#10082a'; }
     if (sh.flame > 0) { drawFlame(sg, sx, top + 19, Math.round(5 + sh.flame * 18), t, 2); drawFlame(sg, sx - 9, top + 18, Math.round(3 + sh.flame * 9), t + .1, 1); drawFlame(sg, sx + 9, top + 18, Math.round(3 + sh.flame * 9), t + .2, 1); }
@@ -245,7 +252,8 @@
     Su.windOff += dt * 3;
     var cb = biomeAt(w, pl.x); Su.curBiome = cb; updWeather(w, dt, cb); updRare(w, dt, st); updCritters(w, dt, t);
     if (Su.flash > 0) Su.flash = Math.max(0, Su.flash - dt * 2);
-    var ctl = Su.mode === 'play' && !(V.game && V.game.fading);
+    var ctl = Su.mode === 'play' && !(V.game && V.game.fading) && !(V.prog && V.prog.open);
+    if (Su.preUpdate) Su.preUpdate(w, dt);
     if (Su.mode === 'arrive') {
       var v = clamp(sh.alt * 1.15, 24, 210); sh.alt -= v * dt; sh.flame = clamp(sh.alt / 60, .35, 1) * (sh.alt > 0 ? 1 : 0); Su.ascent = clamp(sh.alt / 320, 0, 1) * .85;
       if (sh.alt <= 0) { sh.alt = 0; sh.flame = 0; Su.mode = 'hatch'; Su.hatchT = 0; Su.ascent = 0; var gc = Su.groundCol(w, sh.x); puff(sh.x, gAt(w, sh.x), 26, gc, 26, 22); V.shake = Math.max(V.shake || 0, .5); }
@@ -261,7 +269,7 @@
     if (ctl) {
       acc += dt; var h = 1 / 120, n = 0; if (acc > .1) acc = .1; while (acc >= h && n < 20) { stepPlayer(w, h, true); acc -= h; n++; }
       pl.moving = Math.abs(pl.vx) > 8 && pl.ground; if (pl.moving) pl.anim += dt * (Math.abs(pl.vx) / 62) * 9;
-      Su.hint = findHint(w); if (V.input.actPressed) act(w);
+      var fh = findHint(w); Su.hint = Su.extHint ? Su.extHint(w, fh) : fh; if (V.input.actPressed) { if (Su.hint && Su.hint.ext) Su.extAct(w, Su.hint); else act(w); }
     } else if (Su.mode === 'play') { stepPlayer(w, dt, false); Su.hint = null; }
     else Su.hint = null;
     // particles

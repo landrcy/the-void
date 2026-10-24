@@ -120,6 +120,8 @@
 
   /* ---------- 5x5 pixel glyphs (icons instead of words) ---------- */
   var GLY = { planet: '.111.111111111111111.111.', gas: '.111.11111.....11111.111.', star: '..1....1..11111..1....1..', bh: '.111.1...11.1.11...1.111.', moon: '.11..1....1....1.....11..', station: '1.1.1.111.11111.111.1.1.1', wreck: '1...1.1.1...1...1.1.1...1', ruins: '111111...11.1.11...11...1', comet: '...1....1.11...11...111..', home: '..1...111.11111.111..1.1.', scan: '..1...1.1.1.1.1.1.1...1..', left: '..1...1...11111.1.....1..', right: '..1.....1.11111...1...1..', up: '..1...111.1.1.1..1....1..', down: '..1....1..1.1.1.111...1..', shift: '..1...1.1.1...1.1.1..111.', ship: '..1...111..111.11.11.1.1.', land: '..1....1..1.1.1.111.11111' };
+  V.addGlyphs = function (o) { for (var k in o) GLY[k] = o[k]; };
+  V.hasGlyph = function (k) { return !!GLY[k]; };
   V.glyph = function (g, name, x, y, col, shadow) { var p = GLY[name] || GLY.planet; for (var pass = shadow ? 0 : 1; pass < 2; pass++) { g.fillStyle = pass ? col : shadow; var o = pass ? 0 : 1; for (var k = 0; k < 25; k++) if (p[k] === '1') g.fillRect(x + (k % 5) + o, y + ((k / 5) | 0) + o, 1, 1); } };
   /* little key cap: 9x9 (or wider) box with a glyph or letter */
   V.keycap = function (g, x, y, label, w, a) { w = w || 9; g.fillStyle = '#05020d'; g.fillRect(x, y, w, 10); g.fillStyle = '#2a0f4d'; g.fillRect(x, y, w, 9); g.fillStyle = '#6a3ab0'; g.fillRect(x, y, w, 1); g.fillRect(x, y, 1, 9); g.fillRect(x + w - 1, y, 1, 9); g.fillStyle = '#14082a'; g.fillRect(x + 1, y + 8, w - 2, 1);
@@ -152,17 +154,25 @@
     get jumpPressed() { return !!(edge[' '] || tEdge.jump); },
     get actPressed() { return !!(edge.e || tEdge.act); }
   };
-  V.endInput = function () { edge = {}; tEdge = {}; };
+  /* pointer in logical (scene-pixel) coordinates, for the in-canvas panels and the map */
+  var M = V.mouse = { x: -99, y: -99, down: false, clicked: false, long: false, wheel: 0, dragX: 0, dragY: 0, has: false, t0: 0, sx: 0, sy: 0, moved: 0, consumed: false };
+  function mpos(e) { var r = canvas.getBoundingClientRect(); M.x = Math.floor((e.clientX - r.left) / r.width * V.W); M.y = Math.floor((e.clientY - r.top) / r.height * V.H); M.has = true; }
+  canvas.addEventListener('pointermove', function (e) { var ox = M.x, oy = M.y; mpos(e); if (M.down) { M.dragX += M.x - ox; M.dragY += M.y - oy; M.moved += Math.abs(M.x - ox) + Math.abs(M.y - oy); } });
+  canvas.addEventListener('pointerdown', function (e) { mpos(e); M.down = true; M.t0 = performance.now(); M.sx = M.x; M.sy = M.y; M.moved = 0; M.pressed = true; M.longFired = false; if (V.onPointerDown) V.onPointerDown(M); });
+  addEventListener('pointerup', function (e) { if (!M.down) return; mpos(e); M.down = false; if (M.moved < 6 && !M.longFired) M.clicked = true; M.released = true; });
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); M.wheel += e.deltaY > 0 ? 1 : -1; }, { passive: false });
+  V.mouseLongCheck = function () { if (M.down && !M.longFired && M.moved < 6 && performance.now() - M.t0 > 450) { M.longFired = true; M.long = true; } };
+  V.endInput = function () { edge = {}; tEdge = {}; M.clicked = false; M.long = false; M.wheel = 0; M.dragX = 0; M.dragY = 0; M.pressed = false; M.released = false; M.consumed = false; };
   V.anyPressed = function () { return Object.keys(edge).length > 0 || Object.keys(tEdge).length > 0; };
 
   /* ---------- loop (delta time, clamped) ---------- */
-  V.time = 0; V.frame = 0; V.paused = false; V.fps = 60; V.dtAvg = 1 / 60; V.maxDt = .05;
+  V.speed = 1; V.time = 0; V.frame = 0; V.paused = false; V.fps = 60; V.dtAvg = 1 / 60; V.maxDt = .05;
   V.hooks = { update: function () { }, draw: function () { } };
   var last = 0, acc = { t: 0, n: 0 };
   V.tick = function (dt) {
     dt = Math.min(V.maxDt, Math.max(0.0005, dt));
     V.time += dt; V.frame++;
-    V.hooks.update(dt); V.hooks.draw(ctx, dt); V.endInput();
+    if (V.mouseLongCheck) V.mouseLongCheck(); V.hooks.update(dt * V.speed); V.hooks.draw(ctx, dt); V.endInput();
   };
   function raf(now) {
     requestAnimationFrame(raf);
@@ -177,7 +187,7 @@
   /* deterministic stepping for tests: advance `sec` seconds at `fps` simulated frames/s; draws once at the end (or every frame if drawAll) */
   V.stepSim = function (sec, fps, drawAll) {
     var n = Math.round(sec * fps), dt = 1 / fps, old = V.hooks.draw; V.maxDt = 1;
-    for (var i = 0; i < n; i++) { V.time += dt; V.frame++; V.hooks.update(dt); if (drawAll || i === n - 1) old(ctx, dt); V.endInput(); }
+    for (var i = 0; i < n; i++) { V.time += dt; V.frame++; V.hooks.update(dt * V.speed); if (drawAll || i === n - 1) old(ctx, dt); V.endInput(); }
     V.maxDt = .05;
   };
   if (Q.has('sim')) V.paused = true;

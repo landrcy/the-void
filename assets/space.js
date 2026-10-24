@@ -23,6 +23,7 @@
     Sp.cam.x = sh.x; Sp.cam.y = sh.y; Sp.cam.lx = Sp.cam.ly = 0;
   };
   Sp.leave = function () { Sp.active = false; };
+  Sp.refreshShip = function () { };
   Sp.getSave = function () { var s = Sp.ship; return { x: Math.round(s.x), y: Math.round(s.y), ang: +s.ang.toFixed(2) }; };
 
   /* ---------- physics ---------- */
@@ -30,13 +31,13 @@
   var near = [];
   function nearBodies() { G.near(Sp.ship.x, Sp.ship.y, 2600, near); return near; }
   function step(dt, ctl) {
-    var sh = Sp.ship, inp = V.input, boosting = ctl && inp.boost && inp.y < 0;
+    var sh = Sp.ship, inp = V.input, Pg = V.prog, canBoost = Pg.cheat.fuel || Pg.fuel > 0, boosting = ctl && inp.boost && inp.y < 0 && canBoost;
     if (ctl) {
       var turn = inp.x; sh.ang += turn * 3.4 * dt;
-      var thr = inp.y < 0 ? 1 : 0; sh.thr = thr; if (inp.boost && thr) sh.boostT += dt; else sh.boostT = Math.max(0, sh.boostT - dt * 3);
-      var a = thr ? (inp.boost ? 560 + Math.min(sh.boostT, 3) * 300 : 210) : 0;
+      var thr = inp.y < 0 ? 1 : 0; sh.thr = thr; if (boosting) { sh.boostT += dt; if (!Pg.cheat.fuel) Pg.fuel = Math.max(0, Pg.fuel - dt / (Pg.has('shield') ? 14 : 7)); } else { sh.boostT = Math.max(0, sh.boostT - dt * 3); Pg.fuel = Math.min(1, Pg.fuel + dt / 10); }
+      var a = (thr ? (boosting ? 560 + Math.min(sh.boostT, 3) * 300 : 210) : 0) * (Pg.has('thrust') ? 1.35 : 1);
       sh.vx += Math.cos(sh.ang) * a * dt; sh.vy += Math.sin(sh.ang) * a * dt;
-      if (inp.y > 0) { var k = Math.exp(-2.4 * dt); sh.vx *= k; sh.vy *= k; }
+      if (inp.y > 0) { var k = Math.exp(-(Pg.has('brakes') ? 5.5 : 2.4) * dt); sh.vx *= k; sh.vy *= k; }
     } else sh.thr = 0;
     var sp = Math.hypot(sh.vx, sh.vy), cap = sh.boostT > 0 ? 520 + Math.min(sh.boostT, 3) * 560 : 260;
     var drag = Math.exp(-(sp > cap ? 1.6 : .12) * dt); sh.vx *= drag; sh.vy *= drag;
@@ -46,11 +47,11 @@
       var b = list[i], dx = b.x - sh.x, dy = b.y - sh.y, d2 = dx * dx + dy * dy; if (d2 > 1600 * 1600) continue; var d = Math.sqrt(d2) || 1;
       var acc = Math.min(massOf(b) / (d2 + b.r * b.r * 2), b.isBH ? 520 : 140); sh.vx += dx / d * acc * dt; sh.vy += dy / d * acc * dt;
       if (Sp.mode === 'fly' || Sp.mode === 'launch') {
-        if (b.isBH) { if (d < b.r * .8) Sp.transit(b); continue; }
+        if (b.isBH) { if (d < b.r * 1.7 && V.prog.has('bhsurf') && !(ctl && inp.y > 0)) { if (!b._surfT || G.t - b._surfT > 3) { b._surfT = G.t; var tx = -dy / d, ty = dx / d, sgn = (sh.vx * tx + sh.vy * ty) >= 0 ? 1 : -1, v0 = Math.max(600, Math.hypot(sh.vx, sh.vy) * 1.8); sh.vx = tx * sgn * v0 + (-dx / d) * 200; sh.vy = ty * sgn * v0 + (-dy / d) * 200; sh.boostT = 2; Sp.flash = .4; Sp.flashCol = '#c04df0'; V.game.toast('SLINGSHOT'); } continue; } if (d < b.r * .8) Sp.transit(b); continue; }
         var rr2 = b.r * (b.elong ? Math.max(1, b.elong) * .85 : 1) + (b.isStar ? 10 : 4); if (b.ring) rr2 = b.r + 4;
         if (d < rr2 && !(Sp.mode === 'launch' && b === Sp.launchBody)) {
-          var nx = -dx / d, ny = -dy / d; sh.x = b.x + nx * rr2; sh.y = b.y + ny * rr2; var vn = sh.vx * nx + sh.vy * ny; if (vn < 0) { sh.vx -= vn * 1.5 * nx; sh.vy -= vn * 1.5 * ny; if (-vn > 120) V.shake = Math.min(1.2, -vn / 300); }
-          if (b.isStar && !Sp.hotMsg) { Sp.hotMsg = 1; V.game.toast('TOO HOT'); Sp.flash = .5; Sp.flashCol = '#ffb060'; setTimeout(function () { Sp.hotMsg = 0; }, 4000); }
+          var nx = -dx / d, ny = -dy / d; sh.x = b.x + nx * rr2; sh.y = b.y + ny * rr2; var vn = sh.vx * nx + sh.vy * ny; if (vn < 0) { sh.vx -= vn * 1.5 * nx; sh.vy -= vn * 1.5 * ny; if (-vn > 120 && !V.prog.has('shield')) V.shake = Math.min(1.2, -vn / 300); }
+          if (b.isStar && !Sp.hotMsg && !V.prog.cheat.god) { Sp.hotMsg = 1; V.game.toast('TOO HOT'); Sp.flash = .5; Sp.flashCol = '#ffb060'; setTimeout(function () { Sp.hotMsg = 0; }, 4000); }
         }
       }
     }
@@ -69,9 +70,14 @@
   /* ---------- update ---------- */
   var acc = 0;
   Sp.update = function (dt) {
-    var sh = Sp.ship, inp = V.input; G.t += dt; nearBodies(); Sp.near = near;
-    if (V.keyPressed('m') || V.keyPressed('Tab')) Sp.mapOpen = !Sp.mapOpen; if (V.keyPressed('Escape')) Sp.mapOpen = false;
-    var ctl = (Sp.mode === 'fly') && !V.game.fading && !Sp.mapOpen;
+    var sh = Sp.ship, inp = V.input, Pg = V.prog; G.t += dt * (Sp.slow ? .35 : 1); nearBodies(); Sp.near = near;
+    if (V.galmap) V.galmap.keys(); else { if (V.keyPressed('m') || V.keyPressed('Tab')) Sp.mapOpen = !Sp.mapOpen; if (V.keyPressed('Escape')) Sp.mapOpen = false; }
+    var ctl = (Sp.mode === 'fly') && !V.game.fading && !Sp.mapOpen && !Pg.open;
+    if (ctl && V.keyPressed('c') && Pg.has('cloak')) { Sp.cloak = !Sp.cloak; V.game.toast(Sp.cloak ? 'CLOAK' : 'UNCLOAK'); }
+    if (ctl && V.keyPressed('t') && Pg.has('timeslow')) Sp.slow = !Sp.slow;
+    if (ctl && (V.keyPressed('q') || Sp.pulseReq)) { Sp.pulseReq = false; Sp.pulse = { t: 0 }; var rng = Pg.has('scanner') ? 9000 : 4200; G.near(sh.x, sh.y, rng, far); far.forEach(function (b) { if (b.type === 'asteroid') return; b._ping = G.t; if (!Sp.seen[b.id] && Math.hypot(b.x - sh.x, b.y - sh.y) < rng) { Sp.seen[b.id] = 1; Sp.seenCount++; } }); if (V.sfx) V.sfx('scan'); }
+    if (Sp.pulse) { Sp.pulse.t += dt; if (Sp.pulse.t > 2.5) Sp.pulse = null; }
+    if (V.aliens) V.aliens.update(dt, ctl); if (V.story) V.story.spaceUpdate(dt);
     if (Sp.mode === 'launch') { Sp.modeT += dt; var lb = Sp.launchBody; var k = Math.min(1, Sp.modeT / 1.4); if (Sp.modeT < 1.4) { var d0 = lb.r * k * 1.25 + 4; sh.x = lb.x + Math.cos(sh.ang) * d0; sh.y = lb.y + Math.sin(sh.ang) * d0; sh.thr = 1; sh.vx = Math.cos(sh.ang) * 90; sh.vy = Math.sin(sh.ang) * 90; } else { Sp.mode = 'fly'; } }
     else if (Sp.mode === 'landing') {
       Sp.modeT += dt; var b = Sp.target, u = Math.min(1, Sp.modeT / 1.5), e = u * u * (3 - 2 * u), dx = sh.x0 - b.x, dy = sh.y0 - b.y, d = Math.hypot(dx, dy) || 1;
@@ -87,7 +93,8 @@
       if (!Sp.seen[b2.id] && edge < Math.max(110, b2.r * 1.8) && b2.type !== 'asteroid') { Sp.seen[b2.id] = 1; Sp.seenCount++; V.game.toast(G.nameOf(b2), V.themeName(b2)); }
       if (b2.landable !== false && !b2.isStar && !b2.isBH && edge < 46 + b2.r * .3 && edge < bd) { bd = edge; best = b2; }
     }
-    if (best && ctl) { Sp.hint = best; if (inp.actPressed) { Sp.mode = 'landing'; Sp.modeT = 0; Sp.target = best; sh.x0 = sh.x; sh.y0 = sh.y; Sp.landFired = false; sh.vx = sh.vy = 0; } }
+    var needGear = best && !Pg.has('gear') && (best.type === 'gas' || best.type === 'icegas' || best.huge); Sp.needGear = needGear;
+    if (best && ctl && !(V.aliens && V.aliens.hint)) { Sp.hint = best; if (inp.actPressed && needGear) { Sp.gearDeny = .5; } else if (inp.actPressed) { Sp.mode = 'landing'; Sp.modeT = 0; Sp.target = best; sh.x0 = sh.x; sh.y0 = sh.y; Sp.landFired = false; sh.vx = sh.vy = 0; } }
     /* camera with a little look-ahead */
     var cam = Sp.cam, lk = 1 - Math.exp(-2.5 * dt), lim = Math.min(V.W, V.H) * .22;
     cam.lx += (clamp(sh.vx * .25, -lim, lim) - cam.lx) * lk; cam.ly += (clamp(sh.vy * .25, -lim, lim) - cam.ly) * lk;
@@ -129,9 +136,11 @@
     for (i = 0; i < near.length; i++) { var p = near[i]; if (p.sys !== sys || !p.orbit || p.orbit.parent || p.type === 'asteroid' || p.isStar || p.orbit.e > 0) continue; var o = p.orbit, cx = o.ox - cam.x + W / 2, cy = o.oy - cam.y + H / 2, n = Math.max(40, Math.round(o.a * TAU / 7)); for (var k = 0; k < n; k++) { var a = k / n * TAU, x = Math.round(cx + Math.cos(a) * o.a), y = Math.round(cy + Math.sin(a) * o.a); if (x >= 0 && y >= 0 && x < W && y < H) g.fillRect(x, y, 1, 1); } }
   }
   function drawShip(g, sx, sy, t) {
-    var sh = Sp.ship, f = S.shipFrame(sh.ang), c = S.SHIP_C;
+    var sh = Sp.ship, f = S.shipFrame(sh.ang, V.prog.shipTier()), c = S.SHIP_C;
     if (sh.thr) { var bx = sx - Math.cos(sh.ang) * (c - 1), by = sy - Math.sin(sh.ang) * (c - 1), len = 4 + (sh.boostT > 0 ? 6 : 0) + (Math.floor(t * 30) % 3); var cols = ['#fff6b0', '#ffb030', '#e0501a', '#8a2a8a']; for (var l = 0; l < len; l++) { var q = l / len, px = Math.round(bx - Math.cos(sh.ang) * l), py = Math.round(by - Math.sin(sh.ang) * l); if (l > 1 && V.bayer(px, py) < q * .8) continue; g.fillStyle = cols[Math.min(3, Math.floor(q * 4))]; g.fillRect(px, py, 1, 1); if (q < .4) { g.fillRect(px + Math.round(Math.sin(sh.ang)), py - Math.round(Math.cos(sh.ang)), 1, 1); g.fillRect(px - Math.round(Math.sin(sh.ang)), py + Math.round(Math.cos(sh.ang)), 1, 1); } } }
+    if (Sp.cloak) { var cv = Sp._clk || (Sp._clk = V.mk(c * 2 + 1, c * 2 + 1)); cv.g.clearRect(0, 0, cv.width, cv.height); cv.g.drawImage(f, 0, 0); var id = cv.g.getImageData(0, 0, cv.width, cv.height), d = id.data; for (var i = 0; i < d.length; i += 4) { var px = (i >> 2) % cv.width, py = ((i >> 2) / cv.width) | 0; if (V.bayer(px + V.frame, py) < .6) d[i + 3] = 0; else { d[i] = d[i] * .5 + 60; d[i + 1] = d[i + 1] * .5 + 110; d[i + 2] = d[i + 2] * .5 + 120; } } cv.g.putImageData(id, 0, 0); f = cv; }
     g.drawImage(f, Math.round(sx) - c, Math.round(sy) - c);
+    if (V.prog.shipTier() >= 4 && !Sp.cloak) { g.fillStyle = (Math.floor(t * 6) & 1) ? '#ff8ae8' : '#9af0ff'; for (var k2 = 0; k2 < 3; k2++) { var aa = t * 2 + k2 * TAU / 3, rr = c + 2; g.fillRect(Math.round(sx + Math.cos(aa) * rr), Math.round(sy + Math.sin(aa) * rr), 1, 1); } }
   }
   Sp.draw = function (g, dt) {
     var W = V.W, H = V.H, cam = Sp.cam, t = V.time, sh = Sp.ship; P.frameBudget(6);
@@ -151,10 +160,13 @@
     }
     if (!shipDrawn && !hideShip) drawShip(g, sh.x - cx + W / 2, sh.y - cy + H / 2, t);
     Sp.drawnCount = drawn;
+    if (V.aliens) V.aliens.draw(g, cx, cy);
+    if (Sp.pulse && !V.reduced) { var pr = Sp.pulse.t * Math.max(W, H) * .6, pn = Math.max(40, pr * 5.5 | 0), pf = 1 - Sp.pulse.t / 2.5; g.fillStyle = '#7affe8'; for (var pi = 0; pi < pn; pi++) { if (V.bayer(pi, 5) > pf) continue; var pa = pi / pn * TAU; g.fillRect(Math.round(W / 2 + (sh.x - cx) + Math.cos(pa) * pr), Math.round(H / 2 + (sh.y - cy) + Math.sin(pa) * pr), 1, 1); } }
     /* landing hint */
-    if (Sp.hint) { var hb = Sp.hint, hx = Math.round(hb.x - cx + W / 2), hy = Math.round(hb.y - cy + H / 2 - hb.r * (hb.elong || 1) - 14) - (Math.floor(t * 3) % 2); keyBox(g, hx, hy, 'E'); V.glyph(g, 'down', hx - 2, hy + 8, '#c04df0', '#05020d'); }
+    if (Sp.hint) { var hb = Sp.hint, hx = Math.round(hb.x - cx + W / 2), hy = Math.round(hb.y - cy + H / 2 - hb.r * (hb.elong || 1) - 14) - (Math.floor(t * 3) % 2); if (hy < 8) hy = 8; if (Sp.needGear) { if (Sp.gearDeny > 0) { Sp.gearDeny -= dt || 1 / 60; hx += Math.round(Math.sin(Sp.gearDeny * 60) * 2); } V.glyph(g, 'gear', hx - 6, hy - 2, '#ffc070', '#05020d'); V.glyph(g, 'lock', hx + 1, hy - 2, '#ff6a6a', '#05020d'); } else { keyBox(g, hx, hy, 'E'); V.glyph(g, 'down', hx - 2, hy + 8, '#c04df0', '#05020d'); } }
     drawMarkers(g, cx, cy);
-    if (Sp.mapOpen) Sp.drawMap(g);
+    if (V.story) V.story.drawSpaceFx(g);
+    if (Sp.mapOpen) { if (V.galmap) V.galmap.draw(g, dt); else Sp.drawMap(g); }
     if (Sp.flash > 0) V.dissolve(g, Sp.flash, Sp.flashCol);
   };
   function keyBox(g, x, y, ch) { g.fillStyle = '#0e0624'; g.fillRect(x - 6, y - 6, 13, 13); g.fillStyle = '#c04df0'; g.fillRect(x - 6, y - 6, 13, 1); g.fillRect(x - 6, y + 6, 13, 1); g.fillRect(x - 6, y - 6, 1, 13); g.fillRect(x + 6, y - 6, 1, 13); V.text(g, ch, x - 1, y - 2, '#ffffff'); }
@@ -165,17 +177,20 @@
   var far = [];
   function drawMarkers(g, cx, cy) {
     var W = V.W, H = V.H, sh = Sp.ship, m = 6, list = [];
-    G.near(sh.x, sh.y, 4200, far);
-    for (var i = 0; i < far.length; i++) { var b = far[i]; if (b.type === 'asteroid' || (b.moonOf && !b.isStar)) continue; var sx = b.x - cx, sy = b.y - cy; if (Math.abs(sx) < W / 2 + b.r && Math.abs(sy) < H / 2 + b.r) continue; var d = Math.hypot(sx, sy); if (d > 4200) continue; list.push([d, b, sx, sy]); }
+    var MR = Sp.pulse || V.prog.has('scanner') ? 9000 : 4200; G.near(sh.x, sh.y, MR, far);
+    for (var i = 0; i < far.length; i++) { var b = far[i]; if (b.type === 'asteroid' || (b.moonOf && !b.isStar)) continue; var sx = b.x - cx, sy = b.y - cy; if (Math.abs(sx) < W / 2 + b.r && Math.abs(sy) < H / 2 + b.r) continue; var d = Math.hypot(sx, sy); if (d > MR) continue; if (d > 4200 && !(b._ping && G.t - b._ping < 20)) continue; list.push([d, b, sx, sy]); }
     list.sort(function (a, b) { return a[0] - b[0]; }); list = list.slice(0, 10);
     var home = G.getBody('0,0:3'); if (home) { var hx = home.x - cx, hy = home.y - cy; if (Math.abs(hx) > W / 2 || Math.abs(hy) > H / 2) list.push([Math.hypot(hx, hy), home, hx, hy, 1]); }
+    V.prog.pins.forEach(function (p) { var px2 = p.x - cx, py2 = p.y - cy; if (Math.abs(px2) > W / 2 || Math.abs(py2) > H / 2) list.push([Math.hypot(px2, py2), { dot: '#ffe07a', pin: p.icon }, px2, py2, 2]); else { var qx = Math.round(W / 2 + px2), qy = Math.round(H / 2 + py2) - 8 - (Math.floor(V.time * 3) % 2); V.glyph(g, 'pin', qx - 2, qy, '#ffe07a', '#05020d'); } });
+    if (Sp.auto) { var ax = Sp.auto.x - cx, ay = Sp.auto.y - cy; if (Math.abs(ax) > W / 2 || Math.abs(ay) > H / 2) list.push([Math.hypot(ax, ay), { dot: '#7affe8', pin: 'auto' }, ax, ay, 2]); }
+    if (V.aliens) V.aliens.markerList().forEach(function (e) { var ex = e.x - cx, ey = e.y - cy; if (Math.abs(ex) > W / 2 || Math.abs(ey) > H / 2) list.push([Math.hypot(ex, ey), { dot: '#a8ffd8', pin: 'alien' }, ex, ey, 2]); });
     for (i = 0; i < list.length; i++) {
       var it = list[i], b2 = it[1], ax = it[2], ay = it[3], k = Math.min((W / 2 - m) / Math.abs(ax || 1e-6), (H / 2 - m) / Math.abs(ay || 1e-6)), px = Math.round(W / 2 + ax * k), py = Math.round(H / 2 + ay * k);
-      var col = it[4] ? '#c04df0' : (b2.dot || '#8888aa'), big = b2.isStar || b2.isBH || it[4];
+      var col = it[4] === 1 ? '#c04df0' : (b2.dot || '#8888aa'), big = b2.isStar || b2.isBH || it[4];
       if (it[0] > 2600 && !it[4] && V.bayer(px, py) > .5) continue;
       var dl = Math.hypot(ax, ay) || 1, ux = ax / dl, uy = ay / dl, gx = Math.round(px - ux * 6), gy = Math.round(py - uy * 6);
       gx = clamp(gx, 4, W - 5); gy = clamp(gy, 4, H - 5);
-      V.glyph(g, it[4] ? 'home' : glyphOf(b2), gx - 2, gy - 2, col, '#05020d');
+      V.glyph(g, it[4] === 1 ? 'home' : it[4] === 2 ? b2.pin : glyphOf(b2), gx - 2, gy - 2, col, '#05020d');
       var tx = Math.round(gx + ux * 5), ty = Math.round(gy + uy * 5), qx = Math.round(-uy), qy = Math.round(ux); g.fillStyle = '#05020d'; g.fillRect(tx, ty, 1, 1); g.fillStyle = col; g.fillRect(tx, ty, 1, 1); g.fillRect(Math.round(gx + ux * 4) + qx, Math.round(gy + uy * 4) + qy, 1, 1); g.fillRect(Math.round(gx + ux * 4) - qx, Math.round(gy + uy * 4) - qy, 1, 1);
     }
   }

@@ -1,7 +1,7 @@
-/* The Void — game state machine: title -> surface <-> space. */
+/* The Void — game state machine: title -> (crash cinematic) -> surface <-> space, warp cinematics, overlays. */
 (function () {
   'use strict';
-  var V = window.VOID, G = V.Gen, Su = V.surface, S = V.spr, Q = V.q;
+  var V = window.VOID, G = V.Gen, Su = V.surface, S = V.spr, Q = V.q, Pg = V.prog;
   var game = V.game = { state: 'title', fade: 0, fadeDir: 0, fadeDur: 1, fadeCb: null, fading: false, toasts: [], body: null, started: false, discovered: 0 };
   V.reduced = Q.has('reduced') || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   if (Q.get('reduced') === '0') V.reduced = false;
@@ -46,8 +46,8 @@
     if (game.started) return; game.started = true;
     V.title.start(function () {
       V.music && V.music.start(); game.fade = 1; game.fadeDir = 0;
-      if (!(V.save && V.save.restore())) { var earth = G.getBody('0,0:3'); startSurface(earth, {}); game.toast('EARTH', 'HOME'); }
-      game.fadeIn(1.4); game.started = false;
+      if (V.save && V.save.restore()) Pg.applyParams(); else { if (Q.has('nocrash')) { Pg.fresh(); var earth = G.getBody('0,0:3'); startSurface(earth, {}); } else V.story.startCrash(); game.toast('EARTH', 'HOME'); }
+      game.fadeIn(game.state === 'cine' ? .4 : 1.4); game.started = false;
     });
   }
   game.begin = beginFromTitle;
@@ -57,11 +57,13 @@
     updFade(dt);
     if (V.shake > 0) V.shake = Math.max(0, V.shake - dt * 1.6);
     for (var i = game.toasts.length - 1; i >= 0; i--) { game.toasts[i].t += dt; if (game.toasts[i].t > 4.2) game.toasts.splice(i, 1); }
+    Pg.update(dt);
     if (game.state === 'title') {
-      V.title.update(dt);
-      if (!game.started && (V.anyPressed() || game.clicked)) { game.clicked = false; beginFromTitle(); if (V.music) V.music.start(); }
+      V.title.update(dt); updReset(dt);
+      if (!game.started && !Pg.open && !game.resetAsk && (V.anyPressed() && !V.keyPressed('l') || game.clicked)) { game.clicked = false; beginFromTitle(); if (V.music) V.music.start(); }
     } else if (game.state === 'surface') { Su.update(dt); if (V.keyPressed('m') && Su.mode === 'play' && V.ui && V.ui.onMapKey) V.ui.onMapKey(); }
     else if (game.state === 'space') { V.space.update(dt); }
+    else if (game.state === 'cine') { V.story.updateCine(dt); }
     if (V.ui && V.ui.update) V.ui.update(dt);
     if (V.save && V.save.tick) V.save.tick(dt);
   }
@@ -78,22 +80,38 @@
   }
   var HINTLINE = null;
   function drawFn(g, dt) {
+    Pg.beginFrame();
     var sh = V.shake > 0 && !V.reduced ? V.shake : 0, ox = 0, oy = 0;
     if (sh) { g.save(); ox = Math.round((Math.random() - .5) * 2 * sh * 2.2); oy = Math.round((Math.random() - .5) * 2 * sh * 2.2); g.translate(ox, oy); }
     if (game.state === 'title') V.title.draw(g, dt);
     else if (game.state === 'surface') { Su.draw(g, dt); Su.drawOverlay(g); }
     else if (game.state === 'space') V.space.draw(g, dt);
+    else if (game.state === 'cine') V.story.drawCine(g);
     if (sh) g.restore();
     /* toasts are screen-reader only (#live); the screen stays wordless */
-    if (V.ui && V.ui.draw && game.state !== 'title') V.ui.draw(g, dt);
+    if (V.ui && V.ui.draw && game.state !== 'title' && game.state !== 'cine') V.ui.draw(g, dt);
+    if (game.state === 'title') drawReset(g);
     if (game.fade > 0) V.dissolve(g, game.fade, '#05020d');
+    Pg.drawOverlay(g);
   }
   V.hooks.update = update; V.hooks.draw = drawFn;
-  V.canvas.addEventListener('pointerdown', function () { if (game.state === 'title') game.clicked = true; });
+  V.canvas.addEventListener('pointerdown', function () { setTimeout(function () { if (game.state === 'title' && !(V.uiHit && V.uiHit()) && !game.resetAsk) game.clicked = true; }, 0); });
+  /* title: a reset icon with a check / cross confirm */
+  game.resetAsk = false;
+  function updReset(dt) { if (game.resetDone > 0) game.resetDone -= dt; }
+  function drawReset(g) {
+    if (game.started || !(V.save && V.save.has())) { if (!(game.resetDone > 0)) return; }
+    var x = 4, y = V.H - 15;
+    if (game.resetDone > 0) { V.glyph(g, 'check', x + 3, y + 3, '#7aff8a', '#05020d'); return; }
+    if (!game.resetAsk) { Pg.iconBtn(g, 'title:reset', x, y, 'reset', '#ff9a9a', function () { game.resetAsk = true; }, 'RESET SAVE'); return; }
+    Pg.panel(g, x - 1, y - 2, 40, 15); V.glyph(g, 'reset', x + 2, y + 3, '#ff6a6a');
+    Pg.iconBtn(g, 'title:yes', x + 10, y, 'check', '#7aff8a', function () { V.save.clear(); Pg.fresh(); Su.worlds = {}; Su.disc = {}; Su.discCount = 0; game.visited = {}; game.visitedCount = 0; V.space.seen = {}; V.space.seenCount = 0; if (V.galmap) V.galmap.disc = {}; game.resetAsk = false; game.resetDone = 1.2; }, 'RESET');
+    Pg.iconBtn(g, 'title:no', x + 24, y, 'cross', '#ff6a6a', function () { game.resetAsk = false; }, 'KEEP');
+  }
 
   /* ---------- boot ---------- */
   function boot() {
-    G.init(seed != null ? seed : 20241);
+    G.init(seed != null ? seed : 20241); Pg.applyParams();
     var pk = Q.get('planet');
     if (pk && !V.save_skip) {
       var f = G.find(pk, 0, 0); if (f) { game.started = true; var b = f.body; V.title.active = false; startSurface(b, {}); game.fade = 0; if (V.music) V.music.armed = true; return; }

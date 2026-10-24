@@ -195,9 +195,23 @@
     if (R < 1.2) { ctx.fillStyle = b.dot || '#aaa'; ctx.fillRect(Math.round(sx), Math.round(sy), 1, 1); return; }
     var Ri = Math.max(2, Math.round(R));
     if (type === 'comet') { var dxx = sx - (light ? sx + Math.cos(light.ang) : sx), n = light ? [-Math.cos(light.ang), -Math.sin(light.ang)] : [1, 0]; var pw = clamp(light && light.k != null ? light.k : .5, .1, 1); P.drawComet(ctx, b, sx, sy, R, t, n[0], n[1], pw); }
+    if (b.ring2) { var pr = b._r2 || (b._r2 = Object.assign(Object.create(b), { id: b.id + '~2', ring: b.ring2 })), q0 = P.get(pr, Ri, light, 'ring0'); ctx.drawImage(q0, Math.round(sx - q0.cx), Math.round(sy - q0.cy)); }
     if (b.ring) {
       var c0 = P.get(b, Ri, light, 'ring0'), c1 = P.get(b, Ri, light, 'ring1'), pl = P.get(b, Ri, light);
       ctx.drawImage(c0, Math.round(sx - c0.cx), Math.round(sy - c0.cy)); ctx.drawImage(pl, Math.round(sx - pl.cx), Math.round(sy - pl.cy)); ctx.drawImage(c1, Math.round(sx - c1.cx), Math.round(sy - c1.cy));
     } else { var cv = P.get(b, Ri, light); ctx.drawImage(cv, Math.round(sx - cv.cx), Math.round(sy - cv.cy)); }
+    if (b.ring2) { var q1 = P.get(b._r2, Ri, light, 'ring1'); ctx.drawImage(q1, Math.round(sx - q1.cx), Math.round(sy - q1.cy)); }
+  };
+  /* Dyson-swarm panel: a gold hexagonal collector with a dark cell grid, lit side brighter */
+  P.renderDyson = function (b, R, light) {
+    var S = Math.ceil(R * 2) + 4, cv = V.mk(S, S), g = cv.g, c = S / 2, rot = b.rot || 0, lit = light ? Math.cos(light.ang - rot) : 0;
+    var cols = ['#4a3410', '#a8741e', '#e8b440', '#fff0a0'];
+    for (var y = 0; y < S; y++) for (var x = 0; x < S; x++) {
+      var dx = x + .5 - c, dy = y + .5 - c, u = dx * Math.cos(rot) + dy * Math.sin(rot), v = -dx * Math.sin(rot) + dy * Math.cos(rot), au = Math.abs(u), av = Math.abs(v) * 2.2;
+      if (au > R || av > R || au * .5 + av * .866 > R * .95) continue;
+      var edge = au > R - 1.2 || au * .5 + av * .866 > R * .95 - 1.2, grid = (Math.floor(u + 50) % 3 === 0) || (Math.floor(v * 2.2 + 50) % 3 === 0), k = .55 + .35 * lit * (u / R);
+      var ci = edge ? 3 : grid ? 0 : (k + (V.bayer(x, y) - .5) * .25 > .62 ? 2 : 1); g.fillStyle = cols[ci]; g.fillRect(x, y, 1, 1);
+    }
+    cv.cx = c; cv.cy = c; return cv;
   };
 })();

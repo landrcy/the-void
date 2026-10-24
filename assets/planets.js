@@ -29,6 +29,11 @@
     gasP: [[40, '#4a2a7a'], [80, '#6e46a8'], [120, '#9a72cc'], [160, '#c4a0e6'], [200, '#e2caf6'], [256, '#f8eeff']],
     gasT: [[40, '#10504a'], [80, '#1a7a6e'], [120, '#36a898'], [160, '#72ccb8'], [200, '#b0ecdc'], [256, '#e6fff6']],
     venus: [[60, '#a8793a'], [110, '#cfa056'], [160, '#e6c27a'], [210, '#f4dea0'], [256, '#fff0c6']],
+    jupiter: [[40, '#6b3a22'], [80, '#9a5a30'], [120, '#c98a52'], [160, '#e8b886'], [200, '#f4dcb4'], [238, '#fff2da'], [256, '#c4563a']],
+    uranus: [[60, '#4aa8b4'], [120, '#6cc6d0'], [180, '#92dce2'], [230, '#b8eeee'], [256, '#e0ffff']],
+    pluto: [[40, '#4a2e24'], [100, '#7e5236'], [150, '#a8805a'], [200, '#ceae86'], [256, '#f6ecdc']],
+    io: [[40, '#5a3a14'], [100, '#a87e26'], [160, '#dcbc3c'], [210, '#eedc6a'], [256, '#fff8c0']],
+    titan: [[60, '#7a4016'], [110, '#a8622a'], [160, '#c88238'], [210, '#e2a24c'], [256, '#f6cc7a']],
     moonG: [[40, '#2a2a32'], [90, '#45454f'], [140, '#6a6a76'], [190, '#908f9c'], [230, '#b4b3c0'], [256, '#d6d5df']]
   };
   var lutCache = {};
@@ -51,7 +56,9 @@
     if (needCr) { var nc = type === 'asteroid' || type === 'comet' ? 14 : 34; for (k = 0; k < nc; k++) { var a = r() * TAU, z = r() * 2 - 1, q = Math.sqrt(1 - z * z), rad = (.05 + Math.pow(r(), 2.4) * .3); craters.push([Math.cos(a) * q, z, Math.sin(a) * q, rad]); } }
     var sites = null; if (type === 'crystal') { sites = []; for (k = 0; k < 46; k++) { var a2 = r() * TAU, z2 = r() * 2 - 1, q2 = Math.sqrt(1 - z2 * z2); sites.push([Math.cos(a2) * q2, z2, Math.sin(a2) * q2, r()]); } D = new Int8Array(MW * MH); }
     var storms = []; if (type === 'gas' || type === 'icegas') { var ns = 1 + (r() < .5 ? 1 : 0) + (r() < .3 ? 1 : 0); for (k = 0; k < ns; k++) storms.push({ lon: r() * TAU, lat: (r() * .9 - .45), rx: .15 + r() * .22, ry: .06 + r() * .06, sw: r() < .5 ? 1 : -1 }); }
-    var bandsN = 5 + Math.floor(r() * 9), bandPh = r() * 9, cloudAmt = b.cloudAmt != null ? b.cloudAmt : 0, moistOff = r() * 40;
+    if (b.grs) storms = [{ lon: 1.2, lat: -.36, rx: .34, ry: .13, sw: 1, red: 1 }, { lon: 3.6, lat: -.6, rx: .1, ry: .04, sw: -1 }, { lon: 4.6, lat: -.6, rx: .09, ry: .04, sw: 1 }];
+    if (b.darkSpot) storms = [{ lon: 2.2, lat: -.35, rx: .3, ry: .12, sw: 1, dark: 1 }];
+    var bandsN = b.bandsN || (5 + Math.floor(r() * 9)), bandPh = r() * 9, cloudAmt = b.cloudAmt != null ? b.cloudAmt : 0, moistOff = r() * 40;
     for (j = 0; j < MH; j++) {
       var lat = (j + .5) / MH * Math.PI - Math.PI / 2, cl = Math.cos(lat), y = Math.sin(lat);
       for (i = 0; i < MW; i++) {
@@ -90,6 +97,7 @@
           var ic = V.fbm3(x * 2.2 + ox, y * 2.2 + oy, z * 2.2 + oz, s, 4), cr2 = Math.abs(V.noise3(x * 5 + 2, y * 5, z * 5 + 9, s + 3) - .5);
           h = clamp(ic * 270 + 30, 0, 255); if (cr2 < .012) h = 12; if (Math.abs(y) > .92) h = 250;
           for (k = 0; k < craters.length; k += 2) { var cr3 = craters[k], d3 = x * cr3[0] + y * cr3[1] + z * cr3[2], a3 = Math.acos(clamp(d3, -1, 1)) / cr3[3]; if (a3 < .9) h = h * .5 + 90; }
+          if (b.heart) { var hl = Math.atan2(Math.sin(lon - 4.7), Math.cos(lon - 4.7)), hy = lat - .05, hx = Math.abs(hl) * 1.1, hq = Math.pow(hx * hx + hy * hy - .12, 3) - hx * hx * hy * hy * hy * 1.4; if (hq < 0) h = 248 + ((V.hf(i, j, s) * 6) | 0); else if (Math.abs(hy) < .4 && V.fbm3(x * 3, y * 3, z * 3, s + 40, 3) < .4) h = 30 + (h >> 2); }
           h |= 0; c = clamp((V.fbm3(x * 3 + oy, y * 4, z * 3 + oz, s + 21, 4) - .66) * 500, 0, 255) * (b.cloudAmt || 0);
         } else if (type === 'lava') {
           var lv = Math.abs(V.fbm3(x * 2.6 + ox, y * 2.6 + oy, z * 2.6 + oz, s, 4) - .5), lv2 = V.fbm3(x * 4 + 9, y * 4, z * 4 + 4, s + 11, 3);
@@ -105,7 +113,8 @@
           var bnd = Math.sin(bl * bandsN * 1.7 + bandPh) * .5 + Math.sin(bl * bandsN * .9 + bandPh * 2) * .3 + .5, tex = V.fbm3(x * 9, y * 22, z * 9, s + 7, 3);
           h = clamp(bnd * 190 + tex * 70, 0, 255) | 0;
           if (type === 'icegas') h = clamp(110 + (bnd - .5) * 70 + tex * 40, 0, 255) | 0;
-          for (k = 0; k < storms.length; k++) { var st = storms[k], dl = Math.atan2(Math.sin(lon - st.lon), Math.cos(lon - st.lon)) / st.rx, dla = (lat - st.lat) / st.ry, dr = dl * dl + dla * dla; if (dr < 1) { var sw = Math.atan2(dla, dl * st.sw) + dr * 5; h = dr < .25 ? 235 : (Math.sin(sw * 2) > 0 ? 215 : 70); if (dr > .8) h = 60; } }
+          if (b.grs && h > 236) h = 236;
+          for (k = 0; k < storms.length; k++) { var st = storms[k], dl = Math.atan2(Math.sin(lon - st.lon), Math.cos(lon - st.lon)) / st.rx, dla = (lat - st.lat) / st.ry, dr = dl * dl + dla * dla; if (dr < 1) { var sw = Math.atan2(dla, dl * st.sw) + dr * 5; if (st.red) { h = dr < .55 ? (dr < .2 || Math.sin(sw * 3) > -.3 ? 252 : 236) : dr > .85 ? 226 : 140; } else if (st.dark) { h = dr < .6 ? 8 : dr > .85 ? 250 : 40; } else { h = dr < .25 ? 235 : (Math.sin(sw * 2) > 0 ? 215 : 70); if (dr > .8) h = 60; } } }
         }
         Hh[idx] = h; C[idx] = c; E[idx] = e;
       }
@@ -135,10 +144,10 @@
   function lutKey(b) {
     var t = b.type;
     if (t === 'earth') return 'earth'; if (t === 'ocean') return 'ocean'; if (t === 'jungle') return 'jungle';
-    if (t === 'desert') return b.palKey || 'desertA'; if (t === 'venus') return 'venus';
+    if (t === 'desert') return b.palKey || 'desertA'; if (t === 'venus') return b.palKey || 'venus';
     if (t === 'rocky' || t === 'barren') return b.palKey || 'rockyG'; if (t === 'moon' || t === 'asteroid' || t === 'comet' || t === 'ruins') return b.palKey || 'moonG';
-    if (t === 'ice') return b.palKey || 'iceA'; if (t === 'lava') return 'lava'; if (t === 'crystal') return b.palKey || 'crystalA';
-    if (t === 'gas' || t === 'icegas') return b.palKey || 'gasJ'; return 'rockyG';
+    if (t === 'ice') return b.palKey || 'iceA'; if (t === 'lava') return b.palKey || 'lava'; if (t === 'crystal') return b.palKey || 'crystalA';
+    if (t === 'gas' || t === 'icegas') return b.grs ? 'jupiter' : (b.palKey || 'gasJ'); return 'rockyG';
   }
   function haveAtm(b) { return b.atm || null; }
 
@@ -155,6 +164,7 @@
     var atm = b.atm ? V.hex(b.atm) : null, atmP = atm ? pk(atm) : 0, atmL = atm ? pk([Math.min(255, atm[0] + 50), Math.min(255, atm[1] + 50), Math.min(255, atm[2] + 40)]) : 0;
     var emisC = b.type === 'lava' ? pk([255, 150, 50]) : b.type === 'crystal' ? pk([255, 255, 255]) : pk([255, 214, 120]);
     var R2 = R * R, rimN = 1 - Math.min(.55, 2.6 / R), outline = opts.outline, elong = opts.elong || 1, ca = opts.rot ? Math.cos(opts.rot) : 1, sa = opts.rot ? Math.sin(opts.rot) : 0;
+    var glint = (b.type === 'earth' || b.type === 'ocean') && hasLight, glintC = pk([236, 246, 255]);
     var cloudThr = 8, cloudOff = (b.cloudSpin || 0), is = 1 / (TAU), lf = light ? (light.k == null ? 1 : light.k) : 0;
     for (var j = 0; j < hh; j++) {
       for (var i = 0; i < ww; i++) {
@@ -173,6 +183,7 @@
         if (!cm && li <= 1 && E[idx] > 120 && (b.type !== 'lava' ? true : true)) { if (b.type === 'lava') col = pk([255, 130 + (E[idx] >> 3), 40]); else if (E[idx] > 190 && (li === 0 || V.bayer(i + w0, j + h0) < .5)) col = emisC; }
         else if (!cm && b.type === 'lava' && E[idx] > 120) col = tab[hv * 4 + Math.max(li, 2)];
         if (b.type === 'crystal' && E[idx] > 120 && li >= 1) col = emisC;
+        if (glint && !cm && hv < 129 && li === 3 && dot > .86 && V.bayer(i + w0, j + h0) < (dot - .86) * 9) col = glintC;
         if (atm && nz < 1 - rimN + .02 && li >= 1 && !cm) { if (V.bayer(i + w0, j + h0) < (li >= 2 ? .7 : .35)) col = atmP; }
         u[j * ww + i] = col;
       }
@@ -239,6 +250,7 @@
     if (t === 'asteroid' || t === 'comet' || t === 'ruins') return P.renderSphere(b, R, light, { outline: P.outline(b), elong: b.elong || 1.15, rot: b.rot || 0, pad: 3 });
     if (t === 'donut' || t === 'cube' || t === 'ringworld') return P.renderShape(b, R, light);
     if (t === 'station') return P.renderStation(b, R, light);
+    if (t === 'dyson') return P.renderDyson(b, R, light);
     if (t === 'wreck') return P.renderWreck(b, R, light);
     return P.renderSphere(b, R, light, null);
   };

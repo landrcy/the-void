@@ -27,14 +27,14 @@
   }
 
   function buildWorld(body) {
-    var th = V.themes[body.type] || V.themes.rocky, r = V.rng(V.hash(body.seed | 0, 77, 5)), w = { body: body, th: th, seed: body.seed | 0, id: body.id };
-    var WW0 = body.home ? 9000 : clamp(Math.round(TAU * body.r * 30), th.minW || 600, 13000);
+    var th = V.themes[body.type === 'dyson' ? 'station' : body.type] || V.themes.rocky, r = V.rng(V.hash(body.seed | 0, 77, 5)), w = { body: body, th: th, seed: body.seed | 0, id: body.id };
+    var WW0 = body.home ? 9000 : clamp(Math.round(TAU * body.r * 30), th.minW || 600, body.r >= 88 ? 40000 : 13000);
     var ps = pickSegs(th, body, r, WW0), segs = ps.segs, WW = ps.WW, n = segs.length, i, x;
     w.WW = WW; w.segs = segs; w.biomes = []; var idx = {};
     segs.forEach(function (sg) { sg.b = V.biomes[sg.id]; sg.w = sg.x1 - sg.x0; if (idx[sg.id] == null) { idx[sg.id] = w.biomes.length; w.biomes.push(sg.b); } sg.bi = idx[sg.id]; });
     w.wl = th.wl != null ? th.wl : -9999; w.liquid = th.liquid || 'water';
     w.g = clamp(560 * Math.sqrt(Math.max(body.r, 4) / 46) * (th.gk || 1), 90, 820); if (th.tiny) w.g = 120 + body.r * 6; if (body.home) w.g = 560;
-    w.dayLen = (th.day || 300) * (.9 + r() * .2); w.skyKey = (th.sky === 'desert' && V.Gen.nameOf(body) === 'MARS') ? 'mars' : (th.sky || 'none'); w.sky = V.skies[w.skyKey]; w.airless = !!th.airless; w.tod = body.home ? .37 : .3 + r() * .3; w.seed1 = r() * 1e4 | 0;
+    w.dayLen = (th.day || 300) * (.9 + r() * .2); w.skyKey = (th.sky === 'desert' && body.mars) ? 'mars' : (th.sky || 'none'); w.sky = V.skies[w.skyKey]; w.airless = !!th.airless; w.tod = body.home ? .37 : .3 + r() * .3; w.seed1 = r() * 1e4 | 0;
     /* heights */
     var N1 = Math.max(3, Math.round(WW / 220)), N2 = Math.max(6, Math.round(WW / 47)), s1 = body.seed & 0xffff, s2 = s1 + 17, s3 = s1 + 41, BW = 130;
     function hseg(sg, xx) {

@@ -24,12 +24,16 @@
   /* ---------- astronaut: 9x13, facing right, frames built from a torso + animated legs ---------- */
   var TORSO = ['...hhhh..', '..hhhhhh.', '..hhVVWh.', '.phhVVVVh', '.phhVVVVh', '.pghhhhg.', '.ppsssdd.', '.ppsaasdd', '.ppsssdd.', '..ssssdd.'];
   var ACOL = { h: '#f4f6ff', g: '#a9b2d4', V: '#2b1b5e', W: '#8fe7ff', p: '#8892b8', s: '#e3e8fa', d: '#9aa4c8', a: '#c04df0', b: '#4a4f80', f: '#d7dcf2', e: '#6b7096' };
-  S.astronaut = function () {
+  S.astronaut = function (suit) {
+    suit = suit || ''; var on = function (i) { return suit[i] === '1'; }, AC = ACOL;
+    /* suit upgrades change the look: 0 jetpack 1 visor 2 heat 3 cold 4 oxygen 5 grapple 6 multitool 7 translator */
+    if (suit) { AC = Object.assign({}, ACOL); if (on(1)) { AC.V = '#6a3a08'; AC.W = '#ffd040'; } if (on(2)) { AC.s = '#f6dccb'; AC.d = '#d0806a'; AC.a = '#ff7a30'; } if (on(3)) { AC.d = '#6a8ad8'; AC.g = '#c8e0ff'; AC.a = on(2) ? '#ff7a30' : '#4ad0ff'; } if (on(0)) { AC.p = '#6a7098'; } }
     var fr = {}, specs = { idle: [[3, 0, 5, 0], 0], idle2: [[3, 0, 5, 0], 1], w0: [[2, 0, 6, 0], 0], w1: [[3, 0, 5, 0], -1], w2: [[4, 0, 4, 0], 0], w3: [[3, 0, 5, 0], -1], jump: [[2, -1, 6, -2], 0], fall: [[2, 0, 6, 0], 0] };
     function leg(p, x, y0, len, col, boot) { p.rect(x, y0, 2, len, col); p.rect(x - (boot ? 0 : 0), y0 + len, 3, 1, ACOL.b); }
     Object.keys(specs).forEach(function (k) {
       var p = new Paint(11, 15), ox = 1, bob = k === 'idle2' ? 1 : (k === 'w1' || k === 'w3' ? 1 : 0), i;
-      for (var j = 0; j < TORSO.length; j++) for (i = 0; i < 9; i++) { var ch = TORSO[j][i]; if (ch !== '.') p.set(ox + i, 1 + j + (k === 'idle2' ? 0 : 0) + (bob && k !== 'idle2' ? 0 : 0), ACOL[ch]); }
+      for (var j = 0; j < TORSO.length; j++) for (i = 0; i < 9; i++) { var ch = TORSO[j][i]; if (ch !== '.') p.set(ox + i, 1 + j + (k === 'idle2' ? 0 : 0) + (bob && k !== 'idle2' ? 0 : 0), AC[ch]); }
+      if (suit) { if (on(0)) { p.rect(0, 5, 2, 5, '#4a4f80'); p.set(0, 5, '#8892b8'); p.set(0, 10, '#ff9030'); p.set(1, 10, '#ffd060'); } if (on(4)) { p.set(1, 3, '#7affe8'); p.set(1, 4, '#3ab0c8'); } if (on(7)) { p.set(6, 0, '#a9b2d4'); p.set(6, -1 + 1, '#a9b2d4'); p.set(7, 0, '#ff4a6a'); } if (on(5)) { p.set(10, 8, '#c8c8d8'); p.set(10, 7, '#8a8aa8'); } if (on(6)) { p.set(10, 9, '#7affa8'); } if (on(2) || on(3)) { p.set(3, 7, AC.a); p.set(8, 7, AC.a); } }
       var s = specs[k][0], ly = 11 + (k === 'idle2' ? 0 : 0), bl = 3;
       var bx = s[0] + ox, fx = s[2] + ox;
       if (k === 'w0') { p.rect(bx - 1, ly, 2, 2, ACOL.e); p.rect(bx - 2, ly + 2, 2, 1, ACOL.e); p.rect(bx - 3, ly + 3, 3, 1, ACOL.b); p.rect(fx, ly, 2, 3, ACOL.f); p.rect(fx, ly + 3, 3, 1, ACOL.b); }
@@ -41,11 +45,21 @@
     });
     return fr;
   };
-  S.astro = null;
+  S.astro = null; var suitCache = {};
+  S.suitFrames = function (key) { return suitCache[key] || (suitCache[key] = S.astronaut(key)); };
 
   /* ---------- the ship (space view): pre-rotated frames sampled from one shape, so every frame is crisp pixel art ---------- */
-  var SHIP_N = 32, SHIP_R = 8;
-  function shipPix(u, v) { /* u forward, v right ; returns hex or null */
+  var SHIP_N = 32, SHIP_R = 10;
+  /* tiers: 0 scout, 1 side pods, 2 warp ring, 3 gold long-wing, 4 crystal */
+  function shipPix(u, v, tier) {
+    tier = tier || 0; var av0 = Math.abs(v);
+    if (tier >= 2 && u > -6.6 && u < -5.2 && av0 > 2.2 && av0 < 4.4) return av0 > 3.6 ? '#7affe8' : '#c04df0';                    /* warp ring */
+    if (tier >= 1 && u > -3.5 && u < 2.5 && av0 > 2.6 && av0 < 3.8) return u > 1.5 ? (tier >= 4 ? '#ffffff' : '#7affe8') : (tier >= 3 ? '#e8b440' : '#8a82b8'); /* side pods */
+    if (tier >= 3) { var wu = u + .5, wing2 = wu < 0 && wu > -5.5 && av0 > 3.6 && av0 < 7.6 && av0 < (wu + 6.4) * 1.3 + 1; if (wing2) return tier >= 4 ? (av0 > 6.6 ? '#ffffff' : (v < 0 ? '#c8f8ff' : '#7ac8ff')) : (av0 > 6.6 ? '#fff0a0' : '#e8b440'); }
+    var c = shipPix0(u * (tier >= 1 ? .92 : 1), v); if (!c || tier < 4) return c;
+    return { '#bff4ff': '#ffffff', '#6fd0f0': '#ff8ae8', '#c04df0': '#ffffff', '#9a8ac8': '#9af0ff', '#6b5c9a': '#4ab0e0', '#4a3d78': '#2a5a9a', '#c9c2ea': '#d8fbff', '#8a82b8': '#8ad8f0', '#efeaff': '#ffffff', '#b3abd8': '#a8e8ff' }[c] || c;
+  }
+  function shipPix0(u, v) { /* u forward, v right ; returns hex or null */
     var au = u, av = Math.abs(v), hw;
     if (au > 6.5 || au < -5.5) return null;
     hw = au > 2 ? (6.5 - au) * .72 : au > -2 ? 2.1 : au > -4 ? 2.5 : 1.8;
@@ -58,20 +72,23 @@
     if (av > 1.6) return v < 0 ? '#c9c2ea' : '#8a82b8';
     return v < 0 ? '#efeaff' : '#b3abd8';
   }
-  S.ship = function () {
+  S.ship = function (tier) {
     var fr = [], c = SHIP_R;
     for (var f = 0; f < SHIP_N; f++) {
       var a = f / SHIP_N * TAU, ca = Math.cos(a), sa = Math.sin(a), p = new Paint(c * 2 + 1, c * 2 + 1);
-      for (var y = 0; y < p.h; y++) for (var x = 0; x < p.w; x++) { var dx = x + .5 - (c + .5), dy = y + .5 - (c + .5), u = dx * ca + dy * sa, v = -dx * sa + dy * ca; p.set(x, y, shipPix(u, v)); }
+      for (var y = 0; y < p.h; y++) for (var x = 0; x < p.w; x++) { var dx = x + .5 - (c + .5), dy = y + .5 - (c + .5), u = dx * ca + dy * sa, v = -dx * sa + dy * ca; p.set(x, y, shipPix(u, v, tier)); }
       fr.push(p.done());
     }
     return fr;
   };
-  S.shipFrame = function (ang) { var f = Math.round(((ang % TAU + TAU) % TAU) / TAU * SHIP_N) % SHIP_N; return S.shipFrames[f]; };
+  var tierFrames = {};
+  S.shipFrame = function (ang, tier) { var f = Math.round(((ang % TAU + TAU) % TAU) / TAU * SHIP_N) % SHIP_N; tier = tier || 0; var set = tier ? (tierFrames[tier] || (tierFrames[tier] = S.ship(tier))) : S.shipFrames; return set[f]; };
   S.SHIP_C = SHIP_R;
   /* ship on the ground (side view): closed / open hatch */
-  S.landedShip = function (open) {
-    var p = new Paint(34, 20), HULL = ['#4a3d78', '#8a82b8', '#c9c2ea', '#f4f0ff'];
+  var landC = {};
+  S.landedShip = function (open, tier) {
+    tier = tier || 0; var key = (open ? 1 : 0) + ':' + tier; if (landC[key]) return landC[key];
+    var p = new Paint(34, 20), HULL = tier >= 4 ? ['#2a5a9a', '#7ac8f0', '#c8f8ff', '#ffffff'] : ['#4a3d78', '#8a82b8', '#c9c2ea', '#f4f0ff'];
     /* legs */
     p.line(9, 14, 5, 19, '#6b5c9a'); p.line(25, 14, 29, 19, '#6b5c9a'); p.line(17, 15, 17, 19, '#6b5c9a'); p.rect(3, 19, 5, 1, '#4a3d78'); p.rect(27, 19, 5, 1, '#4a3d78'); p.rect(15, 19, 5, 1, '#4a3d78');
     /* hull */
@@ -86,7 +103,25 @@
     /* hatch */
     if (open) { p.rect(9, 6, 4, 6, '#120a26'); p.rect(9, 12, 7, 1, '#9a8ac8'); p.line(13, 13, 16, 14, '#9a8ac8'); }
     else { p.rect(9, 6, 4, 6, '#6b5c9a'); p.rect(10, 7, 2, 3, '#4a3d78'); }
-    return p.done();
+    if (tier >= 1) { p.rect(24, 10, 7, 2, '#8a82b8'); p.rect(29, 10, 2, 1, '#7affe8'); p.rect(3, 10, 5, 2, '#8a82b8'); p.set(3, 10, '#7affe8'); }
+    if (tier >= 2) { p.ell(1, 9, 1.5, 4.5, function () { return '#c04df0'; }); p.set(1, 5, '#7affe8'); p.set(1, 13, '#7affe8'); p.set(0, 9, '#7affe8'); }
+    if (tier >= 3) { p.rect(5, 8, 24, 1, '#e8b440'); p.poly([[24, 6], [33, 3], [31, 7]], '#e8b440'); p.set(32, 3, '#fff0a0'); }
+    if (tier >= 4) { p.poly([[14, 2], [17, -1], [19, 2]], '#ff8ae8'); p.set(17, 0, '#ffffff'); p.rect(3, 9, 28, 1, '#ffffff'); }
+    return (landC[key] = p.done());
+  };
+  /* the crashed ship: tilted, scorched, a leg snapped, panels missing */
+  var wreckC = null;
+  S.wreckShip = function () {
+    if (wreckC) return wreckC; var src = S.landedShip(false, 0), sw = src.width, sh = src.height, sd = src.g.getImageData(0, 0, sw, sh).data, W = 40, H = 26, c = V.mk(W, H), g = c.g, img = g.createImageData(W, H), d = img.data, a = -.26, ca = Math.cos(a), sa = Math.sin(a);
+    for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+      var dx = x - W / 2, dy = y - H / 2 - 2, u = Math.round(dx * ca + dy * sa + sw / 2), v = Math.round(-dx * sa + dy * ca + sh / 2); if (u < 0 || v < 0 || u >= sw || v >= sh) continue; var k = (v * sw + u) * 4; if (!sd[k + 3]) continue;
+      if (v >= 15 && u > 22) continue; /* snapped legs on the high side */
+      var o = (y * W + x) * 4, burn = V.hf(u >> 1, v >> 1, 9) < .35 || (u > 20 && V.hf(u, v, 3) < .5), hole = V.hf(u >> 1, v, 4) > .93 && v > 5 && v < 12;
+      var r0 = sd[k], g0 = sd[k + 1], b0 = sd[k + 2]; if (hole) { r0 = 18; g0 = 10; b0 = 34; } else if (burn) { r0 = r0 * .45 + 20; g0 = g0 * .4 + 14; b0 = b0 * .4 + 18; }
+      d[o] = r0; d[o + 1] = g0; d[o + 2] = b0; d[o + 3] = 255;
+    }
+    g.putImageData(img, 0, 0); g.fillStyle = '#ff9030'; g.fillRect(27, 11, 1, 1); g.fillStyle = '#ffd060'; g.fillRect(12, 13, 1, 1);
+    return (wreckC = c);
   };
 
   /* ---------- critters ---------- */

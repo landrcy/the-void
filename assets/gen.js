@@ -42,7 +42,10 @@
     else type = roll < .34 ? 'ice' : roll < .6 ? 'gas' : roll < .82 ? 'icegas' : roll < .92 ? 'rocky' : 'crystal';
     var rad = giantR(r, type) || (14 + r() * 38);
     if (type === 'crystal') rad = 16 + r() * 22; if (type === 'venus') rad = 24 + r() * 22;
-    var b = mkBody(cell, sys, list, { type: type, seed: Math.floor(r() * 1e9), r: rad, orbit: orbitOf(null, a, 600 + a * (.7 + r() * .6) * 1.1 + r() * 800, r() * TAU, 0, 0, sys.x, sys.y), tilt: .15 + r() * .5, spin: r() * TAU, landable: true, cloudAmt: 0, star: star });
+    var hugeRoll = r(), huge = false;
+    if ((type === 'gas' || type === 'icegas') && hugeRoll < .2) { rad = 210 + r() * 110; huge = true; }
+    else if (type !== 'gas' && type !== 'icegas' && type !== 'crystal' && hugeRoll < .1) { rad = 88 + r() * 56; huge = true; }
+    var b = mkBody(cell, sys, list, { type: type, seed: Math.floor(r() * 1e9), r: rad, orbit: orbitOf(null, a + (huge ? rad : 0), 600 + a * (.7 + r() * .6) * 1.1 + r() * 800, r() * TAU, 0, 0, sys.x, sys.y), tilt: .15 + r() * .5, spin: r() * TAU, landable: true, cloudAmt: 0, star: star, huge: huge });
     var pk = PALKEYS[type]; if (pk) b.palKey = V.pick(r, pk);
     b.atm = ATM[type] || null;
     if (type === 'desert') { b.atm = r() < .5 ? ATM.desert : null; b.cloudAmt = r() < .4 ? .25 : 0; }
@@ -51,11 +54,11 @@
     if (type === 'lava') { b.atm = r() < .4 ? ATM.lava : null; b.cloudAmt = r() < .5 ? .3 : 0; }
     if (type === 'gas' || type === 'icegas') { b.atm = type === 'gas' ? '#e8c89a' : '#8fb8ff'; if (b.palKey === 'gasP') b.atm = '#c8a0e8'; if (b.palKey === 'gasT') b.atm = '#80e0c8'; if (b.palKey === 'gasS') b.atm = '#e8dca0'; }
     var ringP = (type === 'gas' || type === 'icegas') ? .38 : .04;
-    if (r() < ringP) { b.ring = { in: 1.35 + r() * .3, out: 2.0 + r() * .7, sq: .2 + r() * .22, ang: (r() - .5) * 1.1, cols: V.pick(r, RINGCOLS) }; }
+    if (r() < ringP || (huge && r() < .5)) { b.ring = { in: 1.35 + r() * .3, out: 2.0 + r() * .7, sq: .2 + r() * .22, ang: (r() - .5) * 1.1, cols: V.pick(r, RINGCOLS) }; if (r() < (huge ? .6 : .3)) b.ring2 = { in: b.ring.out + .25, out: b.ring.out + .7 + r() * .5, sq: b.ring.sq, ang: b.ring.ang, cols: V.pick(r, RINGCOLS) }; }
     b.dot = dotOf(b); b.surf = type;
     /* moons */
-    var nm = type === 'gas' ? Math.floor(r() * 4.5) : type === 'icegas' ? Math.floor(r() * 3.5) : rad > 28 ? Math.floor(r() * 2.6) : (r() < .25 ? 1 : 0);
-    var ma = rad * (b.ring ? b.ring.out + .8 : 2.1);
+    var nm = huge ? 4 + Math.floor(r() * 4) : type === 'gas' ? Math.floor(r() * 4.5) : type === 'icegas' ? Math.floor(r() * 3.5) : rad > 28 ? Math.floor(r() * 2.6) : (r() < .25 ? 1 : 0);
+    var ma = rad * (b.ring2 ? b.ring2.out + .5 : b.ring ? b.ring.out + .8 : 2.1);
     for (var m = 0; m < nm; m++) {
       var mt = r() < .5 ? 'moon' : r() < .5 ? 'ice' : r() < .3 ? 'lava' : 'rocky', mr = 5 + r() * 8; ma += mr * 2 + 10 + r() * 30;
       var mb = mkBody(cell, sys, list, { type: mt, seed: Math.floor(r() * 1e9), r: mr, moonOf: b, orbit: orbitOf(b, ma, 40 + ma * .9 + r() * 60, r() * TAU), tilt: r() * .4, spin: r() * TAU, landable: true, star: star });
@@ -91,6 +94,7 @@
     var list = c.bodies, sys, star;
     function newSys(kind, x, y) { sys = { cx: cx, cy: cy, x: x, y: y, kind: kind, stars: [], cell: c, id: cx + ',' + cy, hz: 1100, tint: [255, 244, 220] }; c.systems.push(sys); return sys; }
     if (home) { genHome(c, newSys('home', 0, 0), list, r); }
+    else if (ring1) { /* quiet space around the solar system */ }
     else if (roll < .87) {
       var x = ox + (r() - .5) * 2000, y = oy + (r() - .5) * 2000, kind, mul = 1;
       var rr = r(), skind = rr < .38 ? 'yellow' : rr < .55 ? 'orange' : rr < .76 ? 'red' : rr < .9 ? 'white' : 'blue';
@@ -109,6 +113,8 @@
         for (var i = 0; i < np && a < mxa; i++) { makePlanet(c, sys, list, r, a, a / sys.hz, star); last = a; a *= 1.42 + r() * .5; }
         beltAndExtras(c, sys, list, r, 600, Math.min(last + 300, 3600), star, true);
         if (r() < .22) genStation(c, sys, list, r, star);
+        if (r() < .14) genShattered(c, sys, list, r, last * 1.35 + 200, star);
+        if (form === 'single' && (skind === 'yellow' || skind === 'white' || skind === 'blue') && r() < .16) genDyson(c, sys, list, r, star);
       } else if (form === 'giant') {
         newSys('giant', x, y); sys.hz = 3800; sys.tint = STARK.giant.tint; star = makeStar(c, sys, list, 'giant', r); sys.stars.push(star);
         var ng = 2 + Math.floor(r() * 3), a2 = 1300 + r() * 500; for (i = 0; i < ng; i++) { makePlanet(c, sys, list, r, a2, 1, star, V.pick(r, ['lava', 'rocky', 'desert', 'gas', 'ice'])); a2 *= 1.4 + r() * .3; }
@@ -130,11 +136,12 @@
     var ns = Math.floor(r() * 3.2);
     for (var k = 0; k < ns; k++) {
       var tries = 0, px, py; do { px = ox + (r() - .5) * C * .9; py = oy + (r() - .5) * C * .9; tries++; } while (tries < 8 && c.systems.length && Math.hypot(px - c.systems[0].x, py - c.systems[0].y) < 3600);
+      if (ring1 && Math.hypot(px, py) < G.HOME_EDGE + 1400) continue;
       genScatter(c, list, r, px, py, home);
     }
     if (!home && r() < .06) c.marks.push('whale'); if (!home && r() < .05) c.marks.push('ghost'); if (r() < .06) c.marks.push('monolith');
     c.whaleSeed = Math.floor(r() * 1e9);
-    G.cells.set(key, c); if (G.cells.size > 60) { var it = G.cells.keys().next().value; var old = G.cells.get(it); if (old) old.bodies.forEach(function (b) { delete G.byId[b.id]; }); G.cells.delete(it); }
+    G.cells.set(key, c); if (G.cells.size > 220) { var itr = G.cells.keys(), it = itr.next().value; if (it === '0,0') { G.cells.delete(it); G.cells.set(it, G.byId['0,0:0'] ? G.byId['0,0:0'].cell : null); it = itr.next().value; } var old = G.cells.get(it); if (old) old.bodies.forEach(function (b) { delete G.byId[b.id]; }); G.cells.delete(it); }
     G.updateCell(c, G.t);
     return c;
   };
@@ -161,26 +168,65 @@
     if (host) mkBody(c, sys, list, { type: 'station', seed: Math.floor(r() * 1e9), r: 12 + r() * 6, orbit: orbitOf(host, host.r * 2.0 + 24, 70 + r() * 30, r() * TAU), landable: true, derelict: r() < .35, dot: '#aab0c8', surf: 'station', star: star });
   }
 
+  /* our real solar system, scaled for play. Index order 0..8 is fixed (saves and tests use these ids). */
   function genHome(c, sys, list, r) {
-    sys.hz = 1100; sys.tint = STARK.yellow.tint; sys.home = true;
-    var star = mkBody(c, sys, list, { type: 'star', isStar: true, skind: 'yellow', seed: 1001, r: 66, orbit: null, landable: false, dot: '#ffe27a', tint: STARK.yellow.tint, L: 1, x: 0, y: 0, surf: 'star' }); sys.stars.push(star);
-    function pl(type, rad, a, T, ph, opts) { var b = mkBody(c, sys, list, Object.assign({ type: type, seed: 5000 + list.length * 31, r: rad, orbit: orbitOf(null, a, T, ph, 0, 0, 0, 0), tilt: .3, spin: 1 + list.length, landable: true, star: star }, opts || {})); b.dot = dotOf(b); b.surf = type; return b; }
-    var mer = pl('rocky', 14, 430, 520, 1.2, { palKey: 'rockyG' });
-    var ven = pl('venus', 27, 700, 900, 4.1, { atm: '#ffd890', cloudAmt: 1 });
-    var earth = pl('earth', 46, 1100, 1500, 5.2, { atm: '#8fc4ff', cloudAmt: .45, tilt: .41, home: true, seed: 20241, spin: 2.2 });
-    mkBody(c, sys, list, { type: 'moon', seed: 777, r: 12, moonOf: earth, orbit: orbitOf(earth, 112, 150, .4), tilt: .1, spin: 0, landable: true, palKey: 'moonG', dot: '#b0afb8', surf: 'moon', star: star });
-    mkBody(c, sys, list, { type: 'station', seed: 4242, r: 13, orbit: orbitOf(earth, 70, 75, 2.0), landable: true, derelict: false, dot: '#aab0c8', surf: 'station', star: star });
-    var mars = pl('desert', 24, 1560, 2300, 2.6, { palKey: 'desertB', atm: '#e0a080', cloudAmt: .1 });
-    mkBody(c, sys, list, { type: 'moon', seed: 31, r: 5, moonOf: mars, orbit: orbitOf(mars, 52, 40, 1), landable: true, palKey: 'moonG', dot: '#8a8590', surf: 'moon', star: star });
-    mkBody(c, sys, list, { type: 'moon', seed: 32, r: 4, moonOf: mars, orbit: orbitOf(mars, 80, 66, 3.8), landable: true, palKey: 'rockyB', dot: '#8a7060', surf: 'moon', star: star });
-    /* belt */
-    var rb = V.rng(88); for (var i = 0; i < 34; i++) { var rr = 2.4 + Math.pow(rb(), 2.2) * 7; var bb = mkBody(c, sys, list, { type: 'asteroid', seed: Math.floor(rb() * 1e9), r: rr, orbit: orbitOf(null, 2060 + (rb() - .5) * 280, 3200 + rb() * 300, rb() * TAU, 0, 0, 0, 0), elong: 1 + rb() * .5, rot: rb() * TAU, spin: rb() * TAU, tilt: .3, landable: true, star: star, palKey: V.pick(rb, ['moonG', 'rockyB', 'rockyG']), dot: '#8a8590', surf: 'asteroid' }); }
-    var jup = pl('gas', 98, 2800, 4200, .3, { palKey: 'gasJ', atm: '#e8c89a', tilt: .1 });
-    [[11, 210, 90, 0], [9, 270, 140, 2], [13, 340, 210, 4.2]].forEach(function (m, i) { var mb = mkBody(c, sys, list, { type: i === 1 ? 'ice' : 'moon', seed: 9000 + i, r: m[0], moonOf: jup, orbit: orbitOf(jup, m[1] + 60, m[2], m[3]), landable: true, palKey: i === 1 ? 'iceA' : (i === 0 ? 'rockyB' : 'moonG'), star: star }); mb.dot = dotOf(mb); mb.surf = mb.type === 'ice' ? 'ice' : 'moon'; });
-    var sat = pl('gas', 78, 3550, 5800, 3.4, { palKey: 'gasS', atm: '#e8dca0', tilt: .45 }); sat.ring = { in: 1.4, out: 2.5, sq: .3, ang: -.35, cols: RINGCOLS[0] };
-    [[8, 260, 120, 1], [10, 330, 190, 3.3]].forEach(function (m, i) { var mb = mkBody(c, sys, list, { type: i ? 'ice' : 'moon', seed: 9100 + i, r: m[0], moonOf: sat, orbit: orbitOf(sat, m[1], m[2], m[3]), landable: true, palKey: i ? 'iceB' : 'moonG', star: star }); mb.dot = dotOf(mb); mb.surf = mb.type; });
-    mkBody(c, sys, list, { type: 'comet', seed: 4040, r: 6, orbit: orbitOf(null, 3000, 1500, 2.2, .84, 1.1, 0, 0), elong: 1.2, rot: 1, tilt: .3, landable: true, star: star, palKey: 'iceA', dot: '#cfe6ff', surf: 'comet' });
+    sys.hz = 1100; sys.tint = STARK.yellow.tint; sys.home = true; sys.edge = G.HOME_EDGE;
+    var star = mkBody(c, sys, list, { type: 'star', isStar: true, skind: 'yellow', seed: 1001, r: 104, orbit: null, landable: false, dot: '#ffe27a', tint: STARK.yellow.tint, L: 1, x: 0, y: 0, surf: 'star', name: 'SUN' }); sys.stars.push(star);
+    function pl(type, rad, a, T, ph, opts) { var b = mkBody(c, sys, list, Object.assign({ type: type, seed: 5000 + list.length * 31, r: rad, orbit: orbitOf(null, a, T, ph, 0, 0, 0, 0), tilt: .3, spin: 1 + list.length, landable: true, star: star }, opts || {})); b.dot = b.dot || dotOf(b); b.surf = b.surf || type; return b; }
+    function moon(host, type, rad, a, T, ph, opts) { var b = mkBody(c, sys, list, Object.assign({ type: type, seed: 7000 + list.length * 17, r: rad, moonOf: host, orbit: orbitOf(host, a, T, ph), tilt: .1, spin: list.length, landable: true, star: star }, opts || {})); b.dot = b.dot || dotOf(b); b.surf = b.surf || (type === 'moon' ? 'moon' : type); return b; }
+    pl('rocky', 12, 420, 520, 1.2, { palKey: 'rockyG', name: 'MERCURY' });                                     // 1
+    pl('venus', 28, 690, 900, 4.1, { atm: '#ffd890', cloudAmt: 1, name: 'VENUS' });                              // 2
+    var earth = pl('earth', 46, 1100, 1500, 5.2, { atm: '#8fc4ff', cloudAmt: .45, tilt: .41, home: true, seed: 20241, spin: 2.2, name: 'EARTH' }); // 3
+    moon(earth, 'moon', 12, 112, 150, .4, { seed: 777, palKey: 'moonG', dot: '#b0afb8', name: 'MOON' });          // 4
+    mkBody(c, sys, list, { type: 'station', seed: 4242, r: 13, orbit: orbitOf(earth, 70, 75, 2.0), landable: true, derelict: false, dot: '#aab0c8', surf: 'station', star: star, name: 'ORBITAL' }); // 5
+    var mars = pl('desert', 24, 1560, 2300, 2.6, { palKey: 'desertB', atm: '#e0a080', cloudAmt: .1, name: 'MARS', mars: true }); // 6
+    moon(mars, 'moon', 5, 52, 40, 1, { seed: 31, palKey: 'moonG', dot: '#8a8590', name: 'PHOBOS', elongMoon: 1 });  // 7
+    moon(mars, 'moon', 4, 80, 66, 3.8, { seed: 32, palKey: 'rockyB', dot: '#8a7060', name: 'DEIMOS' });            // 8
+    /* main belt with Ceres */
+    var rb = V.rng(88); for (var i = 0; i < 46; i++) { var rr = 2.4 + Math.pow(rb(), 2.2) * 7; var bb = mkBody(c, sys, list, { type: 'asteroid', seed: Math.floor(rb() * 1e9), r: rr, orbit: orbitOf(null, 2120 + (rb() - .5) * 300, 3200 + rb() * 300, rb() * TAU), elong: 1 + rb() * .5, rot: rb() * TAU, spin: rb() * TAU, tilt: rb() * .5, landable: true, star: star, palKey: V.pick(rb, ['moonG', 'rockyB', 'rockyG', 'rockyU']), dot: '#8a8590', belt: 'main' }); bb.surf = 'asteroid'; }
+    pl('moon', 9, 2160, 3300, 4.4, { palKey: 'rockyG', name: 'CERES', dot: '#9a96a0', surf: 'moon' });
+    /* Jupiter: banded, Great Red Spot, the four Galilean moons */
+    var jup = pl('gas', 150, 3050, 4400, .3, { palKey: 'gasJ', atm: '#e8c89a', tilt: .05, name: 'JUPITER', grs: true, bandsN: 11, huge: true });
+    moon(jup, 'lava', 10, 236, 70, 0, { palKey: 'io', name: 'IO', io: true, dot: '#e8d050' });
+    moon(jup, 'ice', 9, 300, 110, 2, { palKey: 'iceA', name: 'EUROPA', europa: true, dot: '#e8dcc8' });
+    moon(jup, 'moon', 14, 380, 170, 4.2, { palKey: 'rockyU', name: 'GANYMEDE', dot: '#9a9080' });
+    moon(jup, 'moon', 13, 470, 250, 5.4, { palKey: 'moonG', name: 'CALLISTO', dot: '#6a6460' });
+    /* Saturn: pale gold, broad rings with the Cassini gap, Titan and Enceladus */
+    var sat = pl('gas', 118, 4180, 5800, 3.4, { palKey: 'gasS', atm: '#e8dca0', tilt: .45, name: 'SATURN', bandsN: 7, huge: true });
+    sat.ring = { in: 1.3, out: 2.45, sq: .3, ang: -.35, cols: ['#5a4a36', '#a8957a', '#d6c3a0', '#f2e6c8'], cassini: true };
+    moon(sat, 'venus', 13, 360, 200, 3.3, { palKey: 'titan', name: 'TITAN', titan: true, atm: '#e8a050', cloudAmt: 1, dot: '#e0a050' });
+    moon(sat, 'ice', 5, 310, 150, 1, { palKey: 'iceB', name: 'ENCELADUS', dot: '#f0f8ff' });
+    /* Uranus: pale cyan, rolled on its side, thin dark rings */
+    var ura = pl('icegas', 64, 5060, 7200, 1.7, { palKey: 'uranus', atm: '#b0f0f0', tilt: 1.5, name: 'URANUS', bandsN: 3 });
+    ura.ring = { in: 1.55, out: 1.85, sq: .95, ang: 1.45, cols: ['#3a4a5a', '#5a6a7a', '#7a8a9a', '#a0b0c0'] };
+    moon(ura, 'ice', 6, 150, 90, 2, { palKey: 'iceB', name: 'MIRANDA' });
+    /* Neptune: deep blue with a dark spot, Triton */
+    var nep = pl('icegas', 60, 5780, 8400, 5.0, { palKey: 'gasN', atm: '#6a98ff', tilt: .5, name: 'NEPTUNE', darkSpot: true, bandsN: 5 });
+    moon(nep, 'ice', 8, 132, 95, 1.3, { palKey: 'iceA', name: 'TRITON' });
+    /* Pluto (with its heart) and Charon, then the Kuiper belt */
+    var plu = pl('ice', 9, 6400, 9600, 2.2, { palKey: 'pluto', name: 'PLUTO', heart: true, dot: '#d8c0a0', surf: 'ice' }); plu.orbit.e = .12; plu.orbit.w = .6;
+    moon(plu, 'moon', 5, 34, 40, 0, { palKey: 'rockyG', name: 'CHARON' });
+    var kb = V.rng(89); for (i = 0; i < 44; i++) { var kr = 2.4 + Math.pow(kb(), 2.4) * 6; var kk = mkBody(c, sys, list, { type: 'asteroid', seed: Math.floor(kb() * 1e9), r: kr, orbit: orbitOf(null, 6150 + kb() * 800, 9000 + kb() * 900, kb() * TAU), elong: 1 + kb() * .4, rot: kb() * TAU, spin: kb() * TAU, tilt: kb() * .5, landable: true, star: star, palKey: V.pick(kb, ['iceA', 'iceB', 'moonG']), dot: '#a8c0e0', belt: 'kuiper' }); kk.surf = 'asteroid'; }
+    /* comets */
+    mkBody(c, sys, list, { type: 'comet', seed: 4040, r: 6, orbit: orbitOf(null, 3400, 1700, 2.2, .86, 1.1, 0, 0), elong: 1.2, rot: 1, tilt: .3, landable: true, star: star, palKey: 'iceA', dot: '#cfe6ff', surf: 'comet', name: 'HALLEY' });
+    mkBody(c, sys, list, { type: 'comet', seed: 4041, r: 5, orbit: orbitOf(null, 4600, 2600, 4.6, .8, 3.9, 0, 0), elong: 1.2, rot: 2, tilt: .3, landable: true, star: star, palKey: 'iceB', dot: '#cfe6ff', surf: 'comet', name: 'HALE-BOPP' });
   }
+  G.HOME_EDGE = 7300;
+
+  /* ---------- the bigger kit: super giants, super-Earths, shattered worlds, Dyson swarms ---------- */
+  function genShattered(cell, sys, list, r, a, star) {
+    var core = mkBody(cell, sys, list, { type: 'lava', seed: Math.floor(r() * 1e9), r: 34 + r() * 16, orbit: orbitOf(null, a, 900 + a, r() * TAU, 0, 0, sys.x, sys.y), tilt: .3, spin: r() * TAU, landable: true, star: star, atm: '#ff7a3a', cloudAmt: .2, shattered: true });
+    core.dot = '#ff6a2a'; core.surf = 'lava';
+    var n = 14 + Math.floor(r() * 10);
+    for (var i = 0; i < n; i++) { var d = core.r * (1.5 + r() * 1.6), sb = mkBody(cell, sys, list, { type: 'asteroid', seed: Math.floor(r() * 1e9), r: 6 + Math.pow(r(), 1.5) * 16, moonOf: core, orbit: orbitOf(core, d, 60 + d * .7, i / n * TAU + r() * .3), elong: 1.2 + r() * .5, rot: r() * TAU, spin: r() * TAU, tilt: r(), landable: true, star: star, palKey: V.pick(r, ['rockyB', 'rockyG', 'moonG']), dot: '#a07060', shard: true }); sb.surf = 'asteroid'; }
+    return core;
+  }
+  function genDyson(cell, sys, list, r, star) {
+    var n = 22 + Math.floor(r() * 16), a = star.r * (2.6 + r() * .8), T = 260 + r() * 200;
+    for (var i = 0; i < n; i++) { if (r() < .2) continue; var aa = a * (.94 + r() * .12); mkBody(cell, sys, list, { type: 'dyson', seed: Math.floor(r() * 1e9), r: 9 + r() * 7, orbit: orbitOf(star, aa, T * (aa / a), i / n * TAU), rot: r() * TAU, landable: true, star: star, dot: '#ffd070', surf: 'station', megastructure: true }); }
+    sys.dyson = true;
+  }
+  G.genShattered = genShattered; G.genDyson = genDyson;
 
   /* ---------- positions ---------- */
   G.pos = function (b, t) {
@@ -195,8 +241,18 @@
   /* cells around (x,y) within `range` world units; positions refreshed */
   G.near = function (x, y, range, out) {
     out = out || []; out.length = 0; var C = G.CELL, i0 = G.cellIndex(x - range), i1 = G.cellIndex(x + range), j0 = G.cellIndex(y - range), j1 = G.cellIndex(y + range);
-    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) { var c = G.genCell(i, j); G.updateCell(c, G.t); for (var k = 0; k < c.bodies.length; k++) out.push(c.bodies[k]); }
+    var hadHome = false;
+    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) { if (i === 0 && j === 0) hadHome = true; var c = G.genCell(i, j); G.updateCell(c, G.t); for (var k = 0; k < c.bodies.length; k++) out.push(c.bodies[k]); }
+    if (!hadHome && Math.hypot(x, y) < G.HOME_EDGE + 600 + range) { var hc = G.genCell(0, 0); G.updateCell(hc, G.t); for (k = 0; k < hc.bodies.length; k++) { var hb = hc.bodies[k]; if (Math.abs(hb.x - x) < range + 400 && Math.abs(hb.y - y) < range + 400) out.push(hb); } }
     return out;
+  };
+  /* cheap look at a cell's main star without generating it (same draws as genCell) */
+  var peekC = new Map();
+  G.peek = function (cx, cy) {
+    var key = G.seed + ':' + cx + ',' + cy; if (peekC.has(key)) return peekC.get(key); var out = null;
+    if (cx === 0 && cy === 0) out = { x: 0, y: 0, skind: 'yellow', form: 'home' };
+    else if (Math.max(Math.abs(cx), Math.abs(cy)) > 1) { var r = V.rng(V.hash(G.seed, cx, cy, 9)), roll = r(); if (roll < .87) { var C = G.CELL, x = cx * C + (r() - .5) * 2000, y = cy * C + (r() - .5) * 2000, rr = r(), skind = rr < .38 ? 'yellow' : rr < .55 ? 'orange' : rr < .76 ? 'red' : rr < .9 ? 'white' : 'blue', form = roll < .50 ? 'single' : roll < .63 ? 'binary' : roll < .67 ? 'ternary' : roll < .72 ? 'giant' : roll < .77 ? 'neutron' : roll < .81 ? 'bh' : 'single'; out = { x: x, y: y, skind: form === 'giant' ? 'giant' : form === 'neutron' ? 'neutron' : skind, form: form }; } }
+    if (peekC.size > 60000) peekC.clear(); peekC.set(key, out); return out;
   };
   G.cellsNear = function (x, y, range) { var out = [], i0 = G.cellIndex(x - range), i1 = G.cellIndex(x + range), j0 = G.cellIndex(y - range), j1 = G.cellIndex(y + range); for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) out.push(G.genCell(i, j)); return out; };
   G.getBody = function (id) { if (G.byId[id]) return G.byId[id]; var m = /^(-?\d+),(-?\d+):/.exec(id); if (m) { G.genCell(+m[1], +m[2]); return G.byId[id] || null; } return null; };
@@ -219,11 +275,12 @@
   };
   function matchKind(b, k) {
     switch (k) { case 'ringed': return !!b.ring; case 'gasgiant': case 'gas': return b.type === 'gas' || b.type === 'icegas'; case 'binary': return b.isStar && b.sys.kind === 'binary'; case 'ternary': return b.isStar && b.sys.kind === 'ternary';
-      case 'pulsar': case 'neutron': return b.skind === 'neutron'; case 'blackhole': case 'bh': return b.type === 'bh'; case 'redgiant': case 'giant': return b.skind === 'giant'; case 'star': return b.isStar; case 'moons': return !!b.moonOf; case 'moon': return b.type === 'moon'; default: return b.type === k; }
+      case 'pulsar': case 'neutron': return b.skind === 'neutron'; case 'blackhole': case 'bh': return b.type === 'bh'; case 'redgiant': case 'giant': return b.skind === 'giant'; case 'star': return b.isStar; case 'moons': return !!b.moonOf; case 'moon': return b.type === 'moon'; case 'huge': return !!b.huge && b.type !== 'gas' && b.type !== 'icegas'; case 'hugegas': return !!b.huge && (b.type === 'gas' || b.type === 'icegas'); case 'shattered': return !!b.shattered; case 'multiring': return !!b.ring2; default: return b.type === k || (!!b.name && b.name.toLowerCase() === k); }
   }
   var SYL = ['ka', 'zo', 'ri', 'mu', 'xe', 'lan', 'dor', 'vi', 'sa', 'tho', 'ne', 'pyr', 'al', 'ix', 'or', 'en', 'ul', 'ta', 'mi', 'qua', 'bel', 'cy', 'dra', 'fe', 'gor', 'hu', 'jo', 'ky'];
   var HOMEN = ['SOL', 'MERCURY', 'VENUS', 'EARTH', 'LUNA', 'ORBITAL', 'MARS', 'PHOBOS', 'DEIMOS'];
   G.nameOf = function (b) {
+    if (b.name) return b.name;
     if (b.sys && b.sys.home) { if (b.isStar) return 'SOL'; var hn = { 1: 'MERCURY', 2: 'VENUS', 3: 'EARTH', 4: 'LUNA', 5: 'ORBITAL', 6: 'MARS', 7: 'PHOBOS', 8: 'DEIMOS' }[b.idx]; if (hn) return hn; if (b.type === 'gas') return b.ring ? 'SATURN' : 'JUPITER'; if (b.type === 'comet') return 'HALLEY'; if (b.type === 'asteroid') return 'CERES BELT'; if (b.moonOf) return b.moonOf.ring ? 'TITAN' : 'EUROPA'; }
     var r = V.rng(V.hash(b.seed | 0, 55, 1)), n = 2 + (r() < .5 ? 1 : 0), s = ''; for (var i = 0; i < n; i++) s += V.pick(r, SYL);
     var suffix = b.moonOf ? ' ' + 'I'.repeat(1 + (b.idx % 3)) : (b.sys && b.sys.kind !== 'lone' && !b.isStar ? ' ' + (1 + (b.idx % 9)) : '');
