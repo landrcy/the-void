@@ -72,3 +72,7 @@ Requires Node and puppeteer-core with Chrome (`PUPPETEER=/path/to/puppeteer-core
   size < 8 MB. Writes `tests/last-report.json`.
 - `node tests/screenshots-v2.js [outdir]` — v2 preview set at 1280/1920/390 (default `/workspace/preview/the-void/v2`).
 - `node tests/screenshots.js [outdir]` — renders the preview screenshot set and refreshes `assets/og.png`.
+
+## Tooltips (v3)
+Hover any icon (or long-press it on touch, or Tab/arrow to it with the keyboard) to get a short description in a dark pixel panel set in VT323 (`assets/tips.js`, `#tip` in `style.css`). The panel shows the name, a one-line description, what state it's in, the cost with resource icons (anything you can't afford is red), and what it needs (for example which upgrade or drive part). Tooltips cover upgrades, admin controls, the top-right buttons, HUD resources, fuel and status icons, galaxy map systems and pins, inhabitant trades and alien ships. They appear after a short delay, move to stay on screen at 390 px wide, and only redraw when their content changes. The scene itself stays free of text.
+Preview: `node tests/screenshots-v3.js` writes to `/workspace/preview/the-void/v3/`.
