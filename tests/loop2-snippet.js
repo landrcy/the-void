@@ -1,0 +1,12 @@
+(()=>{const V=VOID,g=V.game,Su=V.surface,Pg=V.prog,log=[];var st;st=()=>g.state+'/'+(Su.mode||'')+'/'+(V.space.mode||'');try{const tap=k=>{V.virtualKeys([k],true);V.stepSim(1/60,60);V.virtualKeys([k],false);V.stepSim(1/60,60);};
+g.clicked=true;for(let i=0;i<20&&g.state==='title';i++)V.stepSim(.5,60);log.push('start '+st());
+for(let i=0;i<30&&g.state==='cine';i++)V.stepSim(.5,60);V.stepSim(3,60);log.push('crash '+st()+' '+(g.body&&g.body.id));
+const w=Su.cur,pk=V.world.pickups(w).filter(p=>p.k==='scrap');for(const p of pk){Su.pl.x=p.x;Su.pl.y-=4;V.stepSim(.4,60);}log.push('scrap '+Pg.res.scrap);
+const sx=Su.ship.x;let k=Su.pl.x<sx?'ArrowRight':'ArrowLeft';for(let i=0;i<1500&&!(Su.hint&&/ship|wreck/.test(Su.hint.kind));i++){V.virtualKeys([k],true);V.stepSim(1/60,60);}V.virtualKeys([k],false);
+log.push('hint '+(Su.hint&&Su.hint.kind));tap('e');V.stepSim(3.5,60);log.push('repaired '+Pg.story.repaired+' scrap '+Pg.res.scrap);
+for(let i=0;i<10&&!(Su.hint&&Su.hint.kind==='ship');i++)V.stepSim(.2,60);tap('e');for(let i=0;i<20&&g.state==='surface';i++)V.stepSim(.5,60);V.stepSim(3,60);log.push('launch '+st());
+const sh=V.space.ship;Object.assign(Pg.res,{scrap:40,ore:10,crystal:12,tech:8});['p1','p2','p3'].forEach(p=>Pg.parts[p]=1);log.push('buy '+Pg.buy('universal')+' has '+Pg.has('universal'));
+V.stepSim(1,60);log.push('after buy '+st());for(let i=0;i<20&&g.state!=='cine';i++){sh.x=V.Gen.HOME_EDGE+300;sh.y=0;sh.vx=200;sh.vy=0;V.stepSim(.3,60);}log.push('warp '+st());
+for(let i=0;i<30&&g.state==='cine';i++)V.stepSim(.5,60);log.push('arrived '+st()+' pos '+Math.round(sh.x)+','+Math.round(sh.y));
+let best=null,bd=1e18;const c=V.Gen.cellOf?null:null;V.space.near&&0;for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const cc=V.Gen.genCell(Math.floor(sh.x/V.Gen.CELL)+dx,Math.floor(sh.y/V.Gen.CELL)+dy);V.Gen.updateCell(cc,V.Gen.t);(cc.bodies||[]).forEach(b=>{if(b.home||!b.landable||b.isStar||b.type==='gas'||b.huge)return;const d=(b.x-sh.x)**2+(b.y-sh.y)**2;if(d<bd){bd=d;best=b;}});}
+log.push('target '+(best&&best.id+' '+best.type));sh.x=best.x+best.r+14;sh.y=best.y;sh.vx=sh.vy=0;V.stepSim(.2,60);log.push('hint '+(V.space.hint&&V.space.hint.id));tap('e');for(let i=0;i<20&&g.state==='space';i++)V.stepSim(.5,60);V.stepSim(5,60);log.push('landed '+st()+' '+(g.body&&g.body.id)+' home '+!!(g.body&&g.body.home));}catch(e){log.push('ERR '+e.stack.split('\n').slice(0,3).join(' | '));}return log;})()

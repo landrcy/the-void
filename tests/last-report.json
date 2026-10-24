@@ -56,6 +56,48 @@
   }
  },
  {
+  "name": "no console errors 1280px ?space&map",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 1280px ?space&map",
+  "pass": true,
+  "info": {
+   "sw": 1280,
+   "iw": 1280,
+   "bw": 1280
+  }
+ },
+ {
+  "name": "no console errors 1280px ?planet=earth&admin",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 1280px ?planet=earth&admin",
+  "pass": true,
+  "info": {
+   "sw": 1280,
+   "iw": 1280,
+   "bw": 1280
+  }
+ },
+ {
+  "name": "no console errors 1280px ?planet=earth&upgrades",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 1280px ?planet=earth&upgrades",
+  "pass": true,
+  "info": {
+   "sw": 1280,
+   "iw": 1280,
+   "bw": 1280
+  }
+ },
+ {
   "name": "no console errors 1920px ?",
   "pass": true,
   "info": []
@@ -104,6 +146,48 @@
  },
  {
   "name": "no horizontal overflow 1920px ?planet=ocean",
+  "pass": true,
+  "info": {
+   "sw": 1920,
+   "iw": 1920,
+   "bw": 1920
+  }
+ },
+ {
+  "name": "no console errors 1920px ?space&map",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 1920px ?space&map",
+  "pass": true,
+  "info": {
+   "sw": 1920,
+   "iw": 1920,
+   "bw": 1920
+  }
+ },
+ {
+  "name": "no console errors 1920px ?planet=earth&admin",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 1920px ?planet=earth&admin",
+  "pass": true,
+  "info": {
+   "sw": 1920,
+   "iw": 1920,
+   "bw": 1920
+  }
+ },
+ {
+  "name": "no console errors 1920px ?planet=earth&upgrades",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 1920px ?planet=earth&upgrades",
   "pass": true,
   "info": {
    "sw": 1920,
@@ -168,10 +252,52 @@
   }
  },
  {
+  "name": "no console errors 390px ?space&map",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 390px ?space&map",
+  "pass": true,
+  "info": {
+   "sw": 390,
+   "iw": 390,
+   "bw": 390
+  }
+ },
+ {
+  "name": "no console errors 390px ?planet=earth&admin",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 390px ?planet=earth&admin",
+  "pass": true,
+  "info": {
+   "sw": 390,
+   "iw": 390,
+   "bw": 390
+  }
+ },
+ {
+  "name": "no console errors 390px ?planet=earth&upgrades",
+  "pass": true,
+  "info": []
+ },
+ {
+  "name": "no horizontal overflow 390px ?planet=earth&upgrades",
+  "pass": true,
+  "info": {
+   "sw": 390,
+   "iw": 390,
+   "bw": 390
+  }
+ },
+ {
   "name": "fps title",
   "pass": true,
   "info": {
-   "fps": 60.3,
+   "fps": 60.4,
    "core": 60,
    "state": "title"
   }
@@ -180,7 +306,7 @@
   "name": "fps earth",
   "pass": true,
   "info": {
-   "fps": 60.5,
+   "fps": 60.4,
    "core": 60,
    "state": "surface"
   }
@@ -198,7 +324,7 @@
   "name": "fps gas",
   "pass": true,
   "info": {
-   "fps": 60.5,
+   "fps": 60.3,
    "core": 60,
    "state": "surface"
   }
@@ -207,7 +333,7 @@
   "name": "fps blackhole",
   "pass": true,
   "info": {
-   "fps": 60.4,
+   "fps": 60.3,
    "core": 60,
    "state": "space"
   }
@@ -216,16 +342,16 @@
   "name": "determinism: same seed -> same galaxy",
   "pass": true,
   "info": [
-   1057336322,
-   1057336322
+   2002470688,
+   2002470688
   ]
  },
  {
   "name": "determinism: different seed -> different galaxy",
   "pass": true,
   "info": [
-   1057336322,
-   3281100786
+   2002470688,
+   3730581684
   ]
  },
  {
@@ -242,11 +368,11 @@
   "info": {
    "30": {
     "walk": 121.51,
-    "thrust": 350.21
+    "thrust": 350.2
    },
    "60": {
     "walk": 121.51,
-    "thrust": 350.21
+    "thrust": 350.2
    },
    "144": {
     "walk": 120.99,
@@ -260,11 +386,11 @@
   "info": {
    "30": {
     "walk": 121.51,
-    "thrust": 350.21
+    "thrust": 350.2
    },
    "60": {
     "walk": 121.51,
-    "thrust": 350.21
+    "thrust": 350.2
    },
    "144": {
     "walk": 120.99,
@@ -294,24 +420,65 @@
   ]
  },
  {
-  "name": "save/load: resumes on the saved world and spot",
+  "name": "full loop: crash -> scrap -> repair -> launch -> solar system -> universal drive -> warp -> land on a generated world",
+  "pass": true,
+  "info": [
+   "start cine/none/fly",
+   "crash surface/crash/fly 0,0:3",
+   "scrap 13",
+   "hint wreck",
+   "repaired true scrap 5",
+   "launch space/none/fly",
+   "buy true has true",
+   "after buy space/none/fly",
+   "warp cine/none/fly",
+   "arrived space/none/fly pos 19245,-9231",
+   "target 2,-1:66 dyson",
+   "hint 2,-1:66",
+   "landed surface/play/landing 2,-1:66 home false"
+  ]
+ },
+ {
+  "name": "save/load: resumes on the saved world and spot with progression",
   "pass": true,
   "info": {
    "saved": {
-    "body": "0,0:6",
-    "x": 2990
+    "body": "2,-1:66",
+    "x": 656
    },
    "loaded": {
     "state": "surface",
-    "body": "0,0:6",
-    "x": 2990,
-    "visited": 2
+    "body": "2,-1:66",
+    "x": 656,
+    "visited": 2,
+    "ore": 77,
+    "uni": true,
+    "repaired": true
    }
+  }
+ },
+ {
+  "name": "save migration v1 -> v2, and reset clears",
+  "pass": true,
+  "info": {
+   "state": "surface",
+   "body": "0,0:6",
+   "repaired": true,
+   "cleared": true
+  }
+ },
+ {
+  "name": "crash cinematic can be skipped",
+  "pass": true,
+  "info": {
+   "before": "cine",
+   "after": "surface",
+   "mode": "play"
   }
  },
  {
   "name": "site size under 8 MB",
   "pass": true,
-  "info": "4.44 MB"
+  "info": "4.58 MB"
  }
 ]

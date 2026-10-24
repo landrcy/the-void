@@ -17,9 +17,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.goto(ROOT + (q ? '?' + q : '')); await sleep(opts.wait || 500); return p;
   }
   // 1+2: console errors and horizontal overflow at three widths, in several states
-  for (const [w, h, mob] of [[1280, 800], [1920, 1080], [390, 844, 1]]) for (const q of ['', 'planet=earth', 'space', 'planet=ocean']) {
+  for (const [w, h, mob] of [[1280, 800], [1920, 1080], [390, 844, 1]]) for (const q of ['', 'planet=earth', 'space', 'planet=ocean', 'space&map', 'planet=earth&admin', 'planet=earth&upgrades']) {
     const p = await page(q, w, h, { mobile: mob, wait: 1500 });
     if (q === '') { await p.mouse.click(w / 2, h / 2); await sleep(3500); }
+    if (q.includes('map')) { await p.evaluate(() => VOID.galmap.open()); await sleep(600); for (let i = 0; i < 6; i++) { await p.mouse.move(w / 2, h / 2); await p.mouse.wheel({ deltaY: 400 }); await sleep(120); } await p.mouse.click(w / 2 + 20, h / 2 + 10); await sleep(300); }
+    if (q.includes('admin')) { await p.keyboard.press('KeyL'); await sleep(500); }
+    if (q.includes('upgrades')) { await p.evaluate(() => { VOID.prog.story.repaired = true; VOID.prog.toggle('up'); }); await sleep(500); await p.mouse.move(w / 2, h / 2); await sleep(300); }
     const ov = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, bw: document.body.scrollWidth }));
     ok(`no console errors ${w}px ?${q}`, p.errs.length === 0, p.errs.slice(0, 3));
     ok(`no horizontal overflow ${w}px ?${q}`, ov.sw <= ov.iw && ov.bw <= ov.iw, ov); await p.close();
@@ -49,13 +52,25 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok('fps independence: thrust distance within 3%', rel('thrust') < .03, indep);
   // 6: reduced motion
   { const p = await page('planet=earth', 1280, 800, { reduced: true, wait: 1500 }); const r = await p.evaluate(() => ({ reduced: VOID.reduced })); ok('prefers-reduced-motion honoured', r.reduced === true && p.errs.length === 0, r); await p.close(); }
-  // 7: land/takeoff loop  8: save/load
-  { const p = await page('sim&fresh&seed=20241'); await p.evaluate(() => localStorage.clear()); const log = await p.evaluate(fs.readFileSync(path.join(__dirname, 'loop-snippet.js'), 'utf8'));
+  // 7: land/takeoff loop (home system)  7b: full story loop  8: save/load
+  { const p = await page('sim&fresh&seed=20241&nocrash'); await p.evaluate(() => localStorage.clear()); const log = await p.evaluate(fs.readFileSync(path.join(__dirname, 'loop-snippet.js'), 'utf8').replace(/void:v1/g, 'void:v2'));
     const pass = log.some(l => /^after board space/.test(l)) && log.some(l => /^near mars hint 0,0:6/.test(l)) && log.some(l => /^surface surface\/play/.test(l));
-    ok('land/takeoff loop: Earth -> board -> launch -> space -> land Mars -> walk', pass && p.errs.length === 0, log.slice(0, 8));
-    const saved = await p.evaluate(() => { VOID.save.write(); return JSON.parse(localStorage.getItem('void:v1')); }); await p.close();
-    const q = await page('sim&seed=20241'); const r = await q.evaluate(() => { const V = VOID; V.game.clicked = true; for (let i = 0; i < 20 && V.game.state === 'title'; i++) V.stepSim(.5, 60); V.stepSim(1, 60); return { state: V.game.state, body: V.surface.cur && V.surface.cur.id, x: Math.round(V.surface.pl.x), visited: V.game.visitedCount }; });
-    ok('save/load: resumes on the saved world and spot', r.state === 'surface' && r.body === saved.body && Math.abs(r.x - saved.surf.x) < 40 && r.visited >= 2, { saved: { body: saved.body, x: saved.surf && saved.surf.x }, loaded: r }); await q.close(); }
+    ok('land/takeoff loop: Earth -> board -> launch -> space -> land Mars -> walk', pass && p.errs.length === 0, log.slice(0, 8)); await p.close(); }
+  { const p = await page('sim&fresh&seed=20241'); await p.evaluate(() => localStorage.clear()); const log = await p.evaluate(fs.readFileSync(path.join(__dirname, 'loop2-snippet.js'), 'utf8'));
+    const has = (re) => log.some(l => re.test(l));
+    const pass = has(/^crash surface\/crash/) && has(/^hint wreck/) && has(/^repaired true/) && has(/^launch space/) && has(/^buy true has true/) && has(/^warp cine/) && has(/^arrived space/) && /home false/.test(log[log.length - 1]) && /^landed surface/.test(log[log.length - 1]);
+    ok('full loop: crash -> scrap -> repair -> launch -> solar system -> universal drive -> warp -> land on a generated world', pass && p.errs.length === 0, log);
+    const saved = await p.evaluate(() => { VOID.prog.res.ore = 77; VOID.save.write(); return JSON.parse(localStorage.getItem('void:v2')); }); await p.close();
+    const q = await page('sim&seed=20241'); const r = await q.evaluate(() => { const V = VOID; V.game.clicked = true; for (let i = 0; i < 20 && V.game.state === 'title'; i++) V.stepSim(.5, 60); V.stepSim(1, 60); return { state: V.game.state, body: V.surface.cur && V.surface.cur.id, x: Math.round(V.surface.pl.x), visited: V.game.visitedCount, ore: V.prog.res.ore, uni: V.prog.has('universal'), repaired: V.prog.story.repaired }; });
+    ok('save/load: resumes on the saved world and spot with progression', r.state === 'surface' && r.body === saved.body && Math.abs(r.x - saved.surf.x) < 40 && r.visited >= 2 && r.ore === 77 && r.uni && r.repaired, { saved: { body: saved.body, x: saved.surf && saved.surf.x }, loaded: r }); await q.close(); }
+  // 9: v1 save migrates; reset clears
+  { const p = await page('sim&seed=20241'); const r = await p.evaluate(() => { localStorage.clear(); localStorage.setItem('void:v1', JSON.stringify({ v: 1, seed: 20241, state: 'surface', body: '0,0:6', surf: { x: 300 }, visited: ['0,0:3', '0,0:6'] })); return 1; }); await p.close();
+    const q = await page('sim&seed=20241'); const m = await q.evaluate(() => { const V = VOID; V.game.clicked = true; for (let i = 0; i < 20 && V.game.state === 'title'; i++) V.stepSim(.5, 60); V.stepSim(1, 60); const o = { state: V.game.state, body: V.surface.cur && V.surface.cur.id, repaired: V.prog.story.repaired }; V.save.clear(); o.cleared = !localStorage.getItem('void:v1') && !localStorage.getItem('void:v2'); return o; });
+    ok('save migration v1 -> v2, and reset clears', m.state === 'surface' && m.body === '0,0:6' && m.repaired && m.cleared && q.errs.length === 0, m); await q.close(); }
+  // 10: crash intro is skippable after first view
+  { const p0 = await page('sim'); await p0.evaluate(() => { localStorage.clear(); localStorage.setItem('void:intro', '1'); }); await p0.close();
+    const p = await page('sim&fresh'); const r = await p.evaluate(() => { const V = VOID; V.game.clicked = true; for (let i = 0; i < 20 && V.game.state === 'title'; i++) V.stepSim(.5, 60); V.stepSim(.6, 60); const a = V.game.state; V.virtualKeys([' '], true); V.stepSim(1 / 60, 60); V.virtualKeys([' '], false); V.stepSim(.5, 60); return { before: a, after: V.game.state, mode: V.surface.mode }; });
+    ok('crash cinematic can be skipped', r.before === 'cine' && r.after === 'surface', r); await p.close(); }
   // site size
   const du = (d) => fs.readdirSync(d, { withFileTypes: true }).reduce((s, e) => s + (e.isDirectory() ? du(path.join(d, e.name)) : fs.statSync(path.join(d, e.name)).size), 0);
   const size = du(path.resolve(__dirname, '..')); ok('site size under 8 MB', size < 8 * 1024 * 1024, (size / 1048576).toFixed(2) + ' MB');
