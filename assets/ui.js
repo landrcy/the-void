@@ -18,12 +18,14 @@
     act: ['.........', '.1111111.', '.1.......', '.1.......', '.111111..', '.1.......', '.1.......', '.1111111.', '.........'],
     up: ['....1....', '...111...', '..11111..', '.1.111.1.', '...111...', '...111...', '...111...', '.........', '.1111111.'],
     scan: ['.........', '..11111..', '.1.....1.', '1..111..1', '1.1...1.1', '1..1.1..1', '1...1...1', '.1.....1.', '..11111..'],
+    build: ['.........', '.111.....', '.1.1.....', '.11111111', '...1...1.', '...1...1.', '...1...1.', '...11111.', '.........'],
+    laser: ['.........', '1........', '.11......', '1..111111', '.11......', '1........', '.........', '.........', '.........'],
     boost: ['.........', '.111111..', '.1.....1.', '.1.....1.', '.111111..', '.1.....1.', '.1.....1.', '.111111..', '.........']
   };
   function icon(name, fg, bg) { var rows = ICONS[name], c = V.mk(13, 13), g = c.g; g.fillStyle = '#05020d'; g.fillRect(0, 0, 13, 13); g.fillStyle = bg; g.fillRect(1, 1, 11, 11); g.fillStyle = '#05020d'; for (var y = 1; y < 12; y++) for (var x = 1; x < 12; x++) if (((x + y) & 1) === 0 && y > 9) g.fillRect(x, y, 1, 1); g.fillStyle = fg; for (y = 0; y < 9; y++) for (x = 0; x < 9; x++) if (rows[y][x] === '1') g.fillRect(x + 2, y + 2, 1, 1); return c; }
   var host, pad, btns = {};
   var BT = {
-    mute: function () { var m = V.music && V.music.muted; return { t: m ? 'Music off' : 'Music on', d: 'Calm space ambient. Click to ' + (m ? 'unmute.' : 'mute.'), n: V.music && V.music.credit ? [V.music.credit] : [] }; },
+    mute: function () { var m = V.music && V.music.muted; return { t: m ? 'Sound off' : 'Sound on', d: 'Calm space ambient and sound effects. Click to ' + (m ? 'unmute.' : 'mute.'), n: [V.music && V.music.credit, V.sfx && V.sfx.credit].filter(Boolean) }; },
     map: function () { return { t: 'Galaxy map', d: 'Zoom from this system out to the whole galaxy. Pins, routes, jumps.', s: U.touchOn ? '' : 'Key: M or Tab', sc: 'dim' }; },
     up: function () { return { t: 'Upgrades', d: 'Spend resources on ship and suit upgrades.', s: U.touchOn ? '' : 'Key: U', sc: 'dim' }; },
     scan: function () { var sp = U.state === 'space'; return { t: 'Scanner pulse', d: sp ? 'Pings nearby planets and shows them at the screen edge.' : 'Shows pickups, deposits and creatures around you.', s: U.touchOn ? '' : 'Key: Q', sc: 'dim' }; },
@@ -76,7 +78,7 @@
     if (pad) {
       var L = document.createElement('div'), R = document.createElement('div'); L.className = 'side'; R.className = 'side';
       L.appendChild(padBtn('l', 'l', 'l')); L.appendChild(padBtn('r', 'r', 'r'));
-      R.appendChild(padBtn('d', 'd', 'd')); R.appendChild(padBtn('u', 'u', 'u')); R.appendChild(padBtn('boost', 'boost', 'boost')); R.appendChild(padBtn('jump', 'jump', 'jump')); R.appendChild(padBtn('act', 'act', 'act'));
+      R.appendChild(padBtn('d', 'd', 'd')); R.appendChild(padBtn('u', 'u', 'u')); R.appendChild(padBtn('boost', 'boost', 'boost')); R.appendChild(padBtn('jump', 'jump', 'jump')); R.appendChild(padBtn('act', 'act', 'act')); R.appendChild(padBtn('laser', 'laser', 'laser')); R.appendChild(padBtn('build', 'build', 'build'));
       pad.appendChild(L); pad.appendChild(R);
     }
     document.addEventListener('fullscreenchange', U.refresh);

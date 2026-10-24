@@ -61,7 +61,7 @@
   Pg.partCount = function () { return Object.keys(Pg.parts).length; };
   Pg.canAfford = function (id) { var u = Pg.byId[id], c = u.cost; for (var k in c) { if (k === 'part') { if (Pg.partCount() < c[k]) return false; } else if ((Pg.res[k] || 0) < c[k]) return false; } return true; };
   Pg.reqMet = function (id) { return Pg.byId[id].req.every(Pg.has); };
-  Pg.gain = function (k, n, x, y) { if (k === 'part') return; Pg.res[k] = (Pg.res[k] || 0) + n; Pg.flashRes = Pg.flashRes || {}; Pg.flashRes[k] = 1; if (V.sfx) V.sfx('pick'); };
+  Pg.gain = function (k, n, x, y) { if (k === 'part') return; Pg.res[k] = (Pg.res[k] || 0) + n; Pg.flashRes = Pg.flashRes || {}; Pg.flashRes[k] = 1; };
   Pg.spend = function (cost) { for (var k in cost) if (k !== 'part') Pg.res[k] -= cost[k]; };
   Pg.buy = function (id, free) {
     if (Pg.has(id)) return false; if (!free && (!Pg.canAfford(id) || !Pg.reqMet(id))) return false;
@@ -127,7 +127,10 @@
     V.dissolve(g, .7, '#05020d'); Pg.panel(g, x0, y0, pw, ph);
     V.glyph(g, 'up2', x0 + 5, y0 + 5, '#c04df0', '#05020d'); Pg.drawRes(g, x0 + 14, y0 + 5, false);
     Pg.iconBtn(g, 'upclose', x0 + pw - 14, y0 + 3, 'close', '#ff9ab0', function () { Pg.open = null; }, 'CLOSE');
-    var secs = [['ship', 'ship'], ['adv', 'warp'], ['suit', 'person']], y = y0 + 18;
+    var NXT = { '': ['fleet', 'fleet', '#ffe07a', 'SHIP GROWTH'], fleet: ['colony', 'colo', '#ffe07a', 'COLONIES + STAR POWER'], colony: ['', 'tabs', '#efe6ff', 'BASIC UPGRADES'] }, nx = NXT[Pg.upTab || ''] || NXT[''];
+    Pg.iconBtn(g, 'uptab', x0 + pw - 28, y0 + 3, nx[1], nx[2], function () { Pg.upTab = nx[0]; }, nx[3]);
+    var secs = Pg.upTab === 'colony' ? [['colony', 'colo'], ['colony2', 'sphere']] : Pg.upTab ? [['fleet', 'fleet'], ['fleet2', 'hang']] : [['ship', 'ship'], ['adv', 'warp'], ['suit', 'person']], y = y0 + 18;
+    if (Pg.upTab === 'fleet' && Pg.shipStage) { var stg = Pg.shipStage(); V.text(g, Pg.STAGE_NAMES[stg], x0 + 10, y0 + ph - 10, '#ffe07a'); for (var si = 0; si < 5; si++) { g.fillStyle = si <= stg ? '#ffe07a' : '#3a2a60'; g.fillRect(x0 + pw - 50 + si * 8, y0 + ph - 9, 6, 3); } }
     secs.forEach(function (s) {
       var list = UP.filter(function (u) { return u[1] === s[0]; }); g.fillStyle = '#2a0f4d'; g.fillRect(x0 + 4, y, pw - 8, 1); V.glyph(g, s[1], x0 + 3, y + 3, '#7a5ab0', '#05020d');
       for (var i = 0; i < list.length; i++) {
@@ -147,7 +150,7 @@
 
   /* ---------- admin / cheat panel ---------- */
   Pg.admin = { tab: 0, spd: 1, tod: -1, wx: 0 };
-  var TELE = [['earth', 'home'], ['mars', 'planet'], ['jupiter', 'gas'], ['saturn', 'ring'], ['ocean', 'ocean'], ['crystal', 'crystal'], ['lava', 'heat'], ['ice', 'cold'], ['huge', 'huge'], ['ringed', 'ring'], ['dyson', 'dyson'], ['shard', 'shard'], ['station', 'station'], ['ringworld', 'ruins'], ['bh', 'bh'], ['system', 'star']];
+  var TELE = [['earth', 'home'], ['mars', 'planet'], ['jupiter', 'gas'], ['saturn', 'ring'], ['ocean', 'ocean'], ['crystal', 'crystal'], ['lava', 'heat'], ['ice', 'cold'], ['huge', 'huge'], ['ringed', 'ring'], ['dyson', 'dyson'], ['shard', 'shard'], ['station', 'station'], ['ringworld', 'ruins'], ['bh', 'bh'], ['system', 'star'], ['mega', 'mega']];
   var WXS = [null, 'rain', 'snow', 'dust', 'ash'];
   function slider(g, id, x, y, w, v, onSet, icon, tip) {
     V.glyph(g, icon, x, y + 1, '#c04df0', '#05020d'); var bx = x + 8, bw = w - 8; Pg.btn(id, bx, y, bw, 7, function () { onSet(clamp((M.x - bx) / (bw - 1), 0, 1)); }, tip);
@@ -155,17 +158,17 @@
     g.fillStyle = '#2a0f4d'; g.fillRect(bx, y + 3, bw, 1); var kx = Math.round(bx + v * (bw - 1)); g.fillStyle = '#efe6ff'; g.fillRect(kx - 1, y + 1, 3, 5);
   }
   Pg.drawAdmin = function (g) {
-    var W = V.W, H = V.H, pw = Math.min(W - 8, 196), ph = Math.min(H - 8, 150), x0 = (W - pw) >> 1, y0 = (H - ph) >> 1, A = Pg.admin, game = V.game;
+    var W = V.W, H = V.H, pw = Math.min(W - 8, 196), ph = Math.min(H - 6, 172), x0 = (W - pw) >> 1, y0 = (H - ph) >> 1, A = Pg.admin, game = V.game;
     V.dissolve(g, .55, '#05020d'); Pg.panel(g, x0, y0, pw, ph);
     V.text(g, 'ADMIN', x0 + 5, y0 + 4, '#c04df0'); Pg.iconBtn(g, 'adclose', x0 + pw - 14, y0 + 2, 'close', '#ff9ab0', function () { Pg.open = null; }, 'CLOSE');
     var y = y0 + 15, x = x0 + 5;
     /* resources */
     V.text(g, 'ADD', x, y + 3, '#7a6aa0');
     RES.forEach(function (k, i) { Pg.iconBtn(g, 'ar:' + k, x + 16 + i * 14, y, k, RCOL[k], function () { Pg.gain(k, 10); }, '+10 ' + k.toUpperCase()); });
-    Pg.iconBtn(g, 'ar:part', x + 16 + 5 * 14, y, 'part', RCOL.part, function () { var n = Pg.partCount(); Pg.parts['admin' + n] = 1; }, '+1 DRIVE PART');
-    Pg.iconBtn(g, 'ar:all', x + 16 + 6 * 14, y, 'all', '#ffffff', function () { RES.forEach(function (k) { Pg.gain(k, 100); }); for (var i = 0; i < 3; i++) Pg.parts['admin' + i] = 1; }, '+100 ALL');
+    Pg.iconBtn(g, 'ar:part', x + 16 + 6 * 14, y, 'part', RCOL.part, function () { var n = Pg.partCount(); Pg.parts['admin' + n] = 1; }, '+1 DRIVE PART');
+    Pg.iconBtn(g, 'ar:all', x + 16 + 7 * 14, y, 'all', '#ffffff', function () { RES.forEach(function (k) { Pg.gain(k, 100); }); for (var i = 0; i < 3; i++) Pg.parts['admin' + i] = 1; }, '+100 ALL');
     y += 14; V.text(g, 'UPG', x, y + 3, '#7a6aa0');
-    var ux = x + 16, uy = y; UP.forEach(function (u, i) { var id = u[0], cx = ux + (i % 15) * 11, cy = uy + Math.floor(i / 15) * 11; Pg.btn('au:' + id, cx, cy, 10, 10, function () { Pg.unlock(id, !Pg.has(id)); if (id === 'universal' && Pg.has(id) && Pg.onUniversal) Pg.onUniversal(true); }, V.tips ? V.tips.adminUp(id) : NAMES[id]); g.fillStyle = Pg.has(id) ? '#6a3ab0' : '#1a0c34'; g.fillRect(cx, cy, 10, 10); V.glyph(g, u[2], cx + 2, cy + 2, Pg.has(id) ? '#ffffff' : '#7a6aa0'); });
+    var ux = x + 16, uy = y; UP.forEach(function (u, i) { var id = u[0], cx = ux + (i % 17) * 10, cy = uy + Math.floor(i / 17) * 10; Pg.btn('au:' + id, cx, cy, 9, 9, function () { Pg.unlock(id, !Pg.has(id)); if (id === 'universal' && Pg.has(id) && Pg.onUniversal) Pg.onUniversal(true); }, V.tips ? V.tips.adminUp(id) : NAMES[id]); g.fillStyle = Pg.has(id) ? '#6a3ab0' : '#1a0c34'; g.fillRect(cx, cy, 9, 9); V.glyph(g, u[2], cx + 2, cy + 2, Pg.has(id) ? '#ffffff' : '#7a6aa0'); });
     Pg.iconBtn(g, 'au:all', x + pw - 26, y + 22, 'all', '#ffffff', function () { var all = UP.every(function (u) { return Pg.has(u[0]); }); UP.forEach(function (u) { Pg.unlock(u[0], !all); }); if (!all && Pg.onUniversal) Pg.onUniversal(true); }, 'ALL UPGRADES');
     y += 36;
     /* toggles */
@@ -183,7 +186,8 @@
     slider(g, 'as:spd', x + 96, y, 80, (Math.log(V.speed) / Math.log(2) + 2) / 4, function (v) { V.speed = +Math.pow(2, v * 4 - 2).toFixed(2); if (Math.abs(V.speed - 1) < .12) V.speed = 1; }, 'speed', 'GAME SPEED');
     V.text(g, 'X' + V.speed, x + 180, y + 1, '#7a6aa0');
     y += 12; V.text(g, 'GO', x, y + 3, '#7a6aa0');
-    TELE.forEach(function (t, i) { var cx = x + 16 + (i % 12) * 14, cy = y + Math.floor(i / 12) * 13; Pg.iconBtn(g, 'ag:' + t[0], cx, cy, t[1], '#efe6ff', function () { if (Pg.teleport) Pg.teleport(t[0]); Pg.open = null; }, 'TO ' + t[0].toUpperCase()); });
+    TELE.forEach(function (t, i) { var cx = x + 16 + (i % 12) * 14, cy = y + Math.floor(i / 12) * 13; Pg.iconBtn(g, 'ag:' + t[0], cx, cy, t[1], '#efe6ff', function () { if (Pg.teleport) Pg.teleport(t[0]); Pg.open = null; }, t[0] === 'mega' ? 'TO THE MEGA BLACK HOLE' : 'TO ' + t[0].toUpperCase()); });
+    y += 27; V.text(g, 'SHIP', x, y + 3, '#7a6aa0'); if (Pg.shipStage) for (var si = 0; si < 5; si++) (function (si) { Pg.iconBtn(g, 'ah:' + si, x + 16 + si * 14, y, ['ship', 'frig', 'cruis', 'capi', 'moth'][si], '#ffe07a', function () { Pg.setStage(si); }, 'STAGE ' + (si + 1) + ': ' + Pg.STAGE_NAMES[si], Pg.shipStage() === si); })(si); if (V.colony) V.colony.adminRow(g, x + 96, y);
   };
 
   /* ---------- input + per-frame ---------- */

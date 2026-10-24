@@ -17,7 +17,7 @@
     heat: 'Walk on burning worlds with no timer.', cold: 'Walk on frozen worlds with no timer.', visor: 'Cosmetic: a gold sun visor for the suit.', grapple: 'G swings a hook up onto ledges.',
     multitool: 'Mine 3x faster for double yield.', rover: 'R rides a hoverboard over water, lava and steps.', translator: 'Bubbles also show what inhabitants mean.'
   };
-  var SEC = { ship: 'Ship upgrade', adv: 'Advanced ship upgrade', suit: 'Suit upgrade' };
+  var SEC = { ship: 'Ship upgrade', adv: 'Advanced ship upgrade', suit: 'Suit upgrade' }; T.UD = UD; T.SEC = SEC;
   T.upgrade = function (id) {
     return function () {
       var u = Pg.byId[id], own = Pg.has(id), req = Pg.reqMet(id), ok = Pg.canAfford(id), o = { t: Pg.NAMES[id], d: UD[id] || '', n: [] }, lvl = id.indexOf('hull') === 0 ? 'Tier ' + (+id.slice(4) + 1) + ' of 4' : SEC[u.sec || u[1]] || '';

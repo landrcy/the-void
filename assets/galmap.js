@@ -26,7 +26,7 @@
   };
   function zoom(d) { GM.zt = clamp(GM.zt + d, LMIN, LMAX); }
   GM.zoom = zoom;
-  function canJump(t) { var sh = Sp.ship, d = Math.hypot(t.x - sh.x, t.y - sh.y), cells = d / G.CELL; if (!Pg.has('universal')) return null; if (Pg.has('galaxy')) return 'galaxy'; if (Pg.has('hyper') && cells < 14) return 'hyper'; if (cells < 4.5 && !Pg.has('autopilot')) return 'warp'; return null; }
+  function canJump(t) { var sh = Sp.ship, d = Math.hypot(t.x - sh.x, t.y - sh.y), cells = d / G.CELL; if (!Pg.has('universal')) return null; if (Pg.has('galaxy') || Pg.has('warp3')) return 'galaxy'; if (Pg.has('hyper') && cells < 14) return 'hyper'; if (cells < 4.5 && !Pg.has('autopilot')) return 'warp'; return null; }
   function canAuto(t) { var sh = Sp.ship, d = Math.hypot(t.x - sh.x, t.y - sh.y); if (!Pg.has('autopilot')) return false; if (!Pg.has('universal') && Math.hypot(t.x, t.y) > G.HOME_EDGE) return false; return d < G.CELL * 4.5; }
   function go() { var t = GM.sel; if (!t) return; if (canAuto(t)) { Sp.auto = { x: t.x, y: t.y }; Sp.mapOpen = false; V.game.toast('AUTOPILOT'); return; } var j = canJump(t); if (j) { Sp.mapOpen = false; var dest = t; if (t.kind === 'point') { var ci = G.cellIndex(t.x), cj = G.cellIndex(t.y), best = null; for (var r = 0; r < 4 && !best; r++) for (var j2 = -r; j2 <= r; j2++) for (var i = -r; i <= r; i++) { var p = G.peek(ci + i, cj + j2); if (p && !best) best = p; } if (best) dest = { x: best.x + 700, y: best.y - 260 }; } else dest = { x: t.x + (t.r ? t.r + 400 : 700), y: t.y - 200 }; V.story.warpTo(dest, true); return; } GM.deny = .5; }
   GM.go = go;
@@ -35,6 +35,8 @@
   function distTxt(x, y) { var sh = Sp.ship, d = Math.hypot(x - sh.x, y - sh.y) / G.CELL; return d < .5 ? 'In this system' : d < 1 ? 'Next door' : d.toFixed(d < 10 ? 1 : 0) + ' sectors away'; }
   function goNote(c) { if (canAuto(c)) return 'Click, then Autopilot to fly there.'; var j = canJump(c); if (j) return 'Click, then Jump.'; return Pg.has('universal') ? 'Too far: needs Hyperspace or Galaxy Jump.' : (Math.hypot(c.x, c.y) > G.HOME_EDGE ? 'Beyond home: needs the Universal Drive.' : 'Fly there yourself, or build Autopilot.'); }
   function candTip(c) {
+    if (c.kind === 'mega' && V.bhfx) return V.bhfx.tip(c);
+    if ((c.kind === 'col' || c.kind === 'dys') && V.colony) return V.colony.tip(c);
     if (c.kind === 'pin') { var w = PINW[c.pin.icon] || PINW.pin; return { t: w[0], d: w[1], s: distTxt(c.x, c.y), sc: 'dim', n: [goNote(c)] }; }
     if (c.kind === 'body') { var b = c.body, o = { t: G.nameOf(b), d: V.themeName(b).toLowerCase().replace(/^./, function (m) { return m.toUpperCase(); }), s: (V.game.visited && V.game.visited[b.id] ? 'Visited · ' : '') + distTxt(c.x, c.y), sc: 'dim', n: [] };
       if (b.isStar || b.isBH) o.n.push(b.isBH ? 'Do not fall in without Hole Surfing.' : 'Too hot to land.'); else if ((b.type === 'gas' || b.type === 'icegas' || b.huge) && !Pg.has('gear')) o.n.push('Landing needs Landing Gear.'); else o.n.push('Fly close and press E to land.'); return o; }
@@ -51,6 +53,8 @@
     var galA = clamp((Math.log(s) - Math.log(900)) / (Math.log(5000) - Math.log(900)), 0, 1), secA = clamp(1 - (Math.log(s) - Math.log(1800)) / (Math.log(6000) - Math.log(1800)), 0, 1) * clamp((Math.log(s) - Math.log(40)) / (Math.log(120) - Math.log(40)), 0, 1), sysA = clamp(1 - (Math.log(s) - Math.log(60)) / (Math.log(160) - Math.log(60)), 0, 1);
     /* galaxy layer */
     if (galA > 0) { var P = galaxyPts(); for (i = 0; i < P.length; i++) { var q = P[i], px = Math.round((q[0] - GM.cx) / s + W / 2), py = Math.round((q[1] - GM.cy) / s + H / 2); if (px < 0 || py < 0 || px >= W || py >= H) continue; if (V.bayer(px, py) > galA * (.55 + q[3] * .45)) continue; g.fillStyle = q[2]; g.fillRect(px, py, 1, 1); } }
+    if (V.bhfx) V.bhfx.mapMark(g, s, cands, toScreen);
+    if (V.colony) V.colony.mapMark(g, s, cands, toScreen);
     /* sector layer: one dot per star system */
     if (secA > 0) {
       var cp = cellPx(s), i0 = G.cellIndex(GM.cx - W / 2 * s), i1 = G.cellIndex(GM.cx + W / 2 * s), j0 = G.cellIndex(GM.cy - H / 2 * s), j1 = G.cellIndex(GM.cy + H / 2 * s), step = cp < 2 ? Math.ceil(2 / cp) : 1;

@@ -130,7 +130,7 @@
 
   /* ---------- input ---------- */
   var keys = {}, edge = {};
-  V.touch = { l: 0, r: 0, u: 0, d: 0, jump: 0, act: 0, boost: 0 };
+  V.touch = { l: 0, r: 0, u: 0, d: 0, jump: 0, act: 0, boost: 0, laser: 0, build: 0 };
   function kd(e) {
     if (e.target && /input|textarea/i.test(e.target.tagName)) return;
     var k = e.key.length === 1 ? e.key.toLowerCase() : e.key;

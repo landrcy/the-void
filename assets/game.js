@@ -24,7 +24,7 @@
   /* ---------- discoveries / save ---------- */
   game.visited = {}; game.visitedCount = 0;
   game.markVisited = function (body) { if (!game.visited[body.id]) { game.visited[body.id] = 1; game.visitedCount++; return true; } return false; };
-  Su.onDiscover = function (id, label) { game.discovered = Su.discCount; game.toast('SCANNED', label); if (V.sfx) V.sfx('scan'); if (V.save) V.save.write(); };
+  Su.onDiscover = function (id, label) { game.discovered = Su.discCount; game.toast('SCANNED', label); if (V.sfx) V.sfx('discover'); if (V.save) V.save.write(); };
   game.onLanded = function (body) { if (game.markVisited(body)) game.toast('LANDED', G.nameOf(body)); else game.toast(G.nameOf(body)); if (V.save) V.save.write(); };
 
   /* ---------- transitions ---------- */

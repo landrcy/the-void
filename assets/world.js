@@ -126,7 +126,7 @@
   function give(w, n, k, c) { Pg.gain(k, c); for (var i = 0; i < Math.min(c, 4); i++) Su.floats.push({ x: n.x + i * 6 - 6, y: gAt(w, n.x) + 20 + i * 4, t: -i * .12, icon: k }); if (V.save) V.save.write(); }
   Wd.talk = function (w, n) {
     var b = Wd.bubble;
-    if (b && b.npc === n && b.d.act) { if (!b.d.cost || Pg.affordCost(b.d.cost)) { b.d.act(); b.d = Wd.dialogue(w, n); b.t = 0; b.ok = .5; if (V.sfx) V.sfx('scan'); } else { b.deny = .4; } return; }
+    if (b && b.npc === n && b.d.act) { if (!b.d.cost || Pg.affordCost(b.d.cost)) { b.d.act(); b.d = Wd.dialogue(w, n); b.t = 0; b.ok = .5; if (V.sfx) V.sfx('trade'); } else { b.deny = .4; if (V.sfx) V.sfx('tradeFail'); } return; }
     Wd.bubble = { npc: n, d: Wd.dialogue(w, n), t: 0 }; n.talkT = 4;
   };
 

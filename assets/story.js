@@ -58,14 +58,14 @@
     if (sc && Su.mode === 'crash') {
       sc.t += dt; var T0 = 1.5;
       if (sc.t < T0) { var u = sc.t / T0, fx = sh.x - 300 * (1 - u), fy = gy + 280 * (1 - u); sc.fx = fx; sc.fy = fy; if (Math.random() < dt * 60) Su.parts.push({ x: fx + (Math.random() - .5) * 4, y: fy + (Math.random() - .5) * 4, vx: -20, vy: 10, life: 0, max: 1.2 + Math.random(), col: Math.random() < .4 ? '#ff9030' : Math.random() < .5 ? '#5a5070' : '#8a80a0', g: -10, big: Math.random() < .5 }); }
-      else if (!sc.hit) { sc.hit = true; Su.flash = 1; V.shake = V.reduced ? 0 : 1.4; Su.puff(sh.x, gy, 40, Su.groundCol(w, sh.x), 30, 40); Su.puff(sh.x, gy + 4, 18, '#ff9030', 16, 50); Su.puff(sh.x, gy + 4, 12, '#8a92b8', 20, 70); if (V.sfx) V.sfx('land'); }
+      else if (!sc.hit) { sc.hit = true; Su.flash = 1; V.shake = V.reduced ? 0 : 1.4; Su.puff(sh.x, gy, 40, Su.groundCol(w, sh.x), 30, 40); Su.puff(sh.x, gy + 4, 18, '#ff9030', 16, 50); Su.puff(sh.x, gy + 4, 12, '#8a92b8', 20, 70); if (V.sfx) V.sfx('crash'); }
       else if (sc.t > T0 + 1.6) { Su.mode = 'play'; var pl = Su.pl; pl.hidden = false; pl.x = sh.x - 24; pl.y = gy; pl.face = -1; pl.vy = 60; Su.puff(sh.x - 10, gy + 10, 10, '#c9c2ea', 8, 30); Pg.story.crashed = true; markIntro(); St.sc = null; if (V.save) V.save.write(); }
     }
     if (onEarthWreck(w) && Su.mode !== 'crash' || (sc && sc.hit)) { if (Math.random() < dt * 14) Su.parts.push({ x: sh.x + 6 + (Math.random() - .5) * 6, y: gy + 16, vx: 6 + Math.random() * 6, vy: 14 + Math.random() * 8, life: 0, max: 2 + Math.random() * 1.5, col: Math.random() < .5 ? '#4a4460' : '#6a6480', g: -4, big: true }); if (Math.random() < dt * 6) Su.parts.push({ x: sh.x - 8, y: gy + 8, vx: 0, vy: 8, life: 0, max: .5, col: '#ff9030', g: 0 }); }
     var rp = St.rep; if (rp) { rp.t += dt; if (Math.random() < dt * 50) { var a = Math.random() * TAU; Su.parts.push({ x: sh.x + (Math.random() - .5) * 30, y: gy + 4 + Math.random() * 16, vx: Math.cos(a) * 40, vy: Math.sin(a) * 40 + 20, life: 0, max: .35, col: Math.random() < .5 ? '#ffffff' : '#7affe8', g: 60 }); } if (rp.t > 2.6) { St.rep = null; Pg.story.repaired = true; Su.puff(sh.x, gy + 10, 24, '#7affe8', 20, 30); V.game.toast('SHIP REPAIRED'); if (V.save) V.save.write(); } }
   };
   St.wreckHint = function (w, fh) { if (!onEarthWreck(w)) return undefined; if (St.rep) return null; if (fh && fh.kind === 'ship') return { ext: true, kind: 'wreck', x: fh.x, y: fh.y }; return fh; };
-  St.repairAct = function (w) { if (St.rep) return; if ((Pg.res.scrap || 0) >= REPAIR) { Pg.res.scrap -= REPAIR; St.rep = { t: 0 }; if (V.sfx) V.sfx('scan'); } else St.deny = .5; };
+  St.repairAct = function (w) { if (St.rep) return; if ((Pg.res.scrap || 0) >= REPAIR) { Pg.res.scrap -= REPAIR; St.rep = { t: 0 }; if (V.sfx) V.sfx('repair'); } else { St.deny = .5; if (V.sfx) V.sfx('deny'); } };
   St.drawShipOverride = function (sg, w, cam, GY0, t) {
     var sc = St.sc; if (sc && !sc.hit) return true; if (!onEarthWreck(w) && !St.rep) return false; if (St.rep && Pg.story.repaired) return false;
     var sh = Su.ship, W = V.W, gy = Su.gAt(w, sh.x), sx = Math.round(Su.wdx(sh.x, cam.x, w.WW) + W / 2), top = Math.round(GY0 - (gy - cam.y)); if (sx < -60 || sx > W + 60) return true;
@@ -138,6 +138,7 @@
 
   /* ---------- 3. admin teleports ---------- */
   Pg.teleport = function (kind) {
+    if (kind === 'mega' && V.bhfx) { Pg.story.crashed = true; Pg.story.repaired = true; St.cine = null; St.sc = null; Pg.unlock('universal'); return V.bhfx.teleport(); }
     var g = V.game, f = null; Pg.story.crashed = true; Pg.story.repaired = true; St.cine = null; St.sc = null;
     if (kind === 'earth') f = { body: G.getBody('0,0:3') };
     else if (kind === 'system') { var d = pickWarpSystem(); Su.leave(); g.state = 'space'; V.space.enter({ pos: { x: d.x, y: d.y } }); if (V.ui) V.ui.setState('space'); Pg.story.warped = true; return; }

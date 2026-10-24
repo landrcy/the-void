@@ -153,7 +153,7 @@
   }
   Su.drawShip = function (sg, w, cam, GY0, t) {
     var sh = Su.ship, W = V.W, gy = gAt(w, sh.x), sx = Math.round(wdx(sh.x, cam.x, w.WW) + W / 2), spr = S.landedShip(sh.open > .5, V.prog ? V.prog.shipTier() : 0), top = Math.round(GY0 - (gy + sh.alt - cam.y) - 20);
-    if (sx < -60 || sx > W + 60) return; sg.drawImage(spr, sx - 17, top);
+    if (sx < -60 || sx > W + 60) return; sg.drawImage(spr, sx - (spr.width >> 1), top + 20 - spr.height);
     if (sh.open > .02 && sh.open < .98) { sg.fillStyle = '#10082a'; }
     if (sh.flame > 0) { drawFlame(sg, sx, top + 19, Math.round(5 + sh.flame * 18), t, 2); drawFlame(sg, sx - 9, top + 18, Math.round(3 + sh.flame * 9), t + .1, 1); drawFlame(sg, sx + 9, top + 18, Math.round(3 + sh.flame * 9), t + .2, 1); }
   };
