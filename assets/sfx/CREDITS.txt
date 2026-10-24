@@ -1,0 +1,78 @@
+The Void - sound effects
+
+All sound effects are by Kenney (www.kenney.nl), released under Creative Commons Zero (CC0 1.0):
+http://creativecommons.org/publicdomain/zero/1.0/
+
+Packs:
+  Sci-Fi Sounds: https://kenney.nl/assets/sci-fi-sounds
+  Interface Sounds: https://kenney.nl/assets/interface-sounds
+  Impact Sounds: https://kenney.nl/assets/impact-sounds
+  Digital Audio: https://kenney.nl/assets/digital-audio
+
+Each file was trimmed, peak-normalised, converted to mono 32 kHz .ogg (Vorbis q1) and .mp3 (48 kbps);
+loops (jet, thrust, laser) were made seamless with a 0.3 s crossfade. sfx-data.js is a base64 copy of the .ogg files for file:// play.
+
+file -> pack / original
+  step1.ogg/.mp3 <- Impact Sounds / footstep_concrete_000.ogg
+  step2.ogg/.mp3 <- Impact Sounds / footstep_concrete_001.ogg
+  step3.ogg/.mp3 <- Impact Sounds / footstep_grass_001.ogg
+  jump.ogg/.mp3 <- Digital Audio / phaseJump3.ogg
+  land.ogg/.mp3 <- Impact Sounds / impactSoft_medium_001.ogg
+  thud.ogg/.mp3 <- Impact Sounds / impactPlate_heavy_000.ogg
+  jet.ogg/.mp3 <- Sci-Fi Sounds / thrusterFire_000.ogg  (loop)
+  thrust.ogg/.mp3 <- Sci-Fi Sounds / spaceEngineLow_000.ogg  (loop)
+  laser.ogg/.mp3 <- Sci-Fi Sounds / forceField_001.ogg  (loop)
+  laserOn.ogg/.mp3 <- Sci-Fi Sounds / laserSmall_000.ogg
+  mine.ogg/.mp3 <- Impact Sounds / impactMining_001.ogg
+  pickup.ogg/.mp3 <- Interface Sounds / pluck_001.ogg
+  pickup2.ogg/.mp3 <- Interface Sounds / drop_002.ogg
+  part.ogg/.mp3 <- Digital Audio / powerUp2.ogg
+  board.ogg/.mp3 <- Sci-Fi Sounds / doorClose_000.ogg
+  exit.ogg/.mp3 <- Sci-Fi Sounds / doorOpen_000.ogg
+  takeoff.ogg/.mp3 <- Sci-Fi Sounds / spaceEngineLarge_000.ogg
+  touchdown.ogg/.mp3 <- Impact Sounds / impactMetal_heavy_000.ogg
+  crash.ogg/.mp3 <- Sci-Fi Sounds / explosionCrunch_000.ogg
+  rumble.ogg/.mp3 <- Sci-Fi Sounds / lowFrequency_explosion_000.ogg
+  repair.ogg/.mp3 <- Sci-Fi Sounds / forceField_002.ogg
+  repaired.ogg/.mp3 <- Digital Audio / powerUp8.ogg
+  buy.ogg/.mp3 <- Digital Audio / powerUp4.ogg
+  deny.ogg/.mp3 <- Interface Sounds / error_006.ogg
+  tier.ogg/.mp3 <- Digital Audio / powerUp11.ogg
+  open.ogg/.mp3 <- Interface Sounds / maximize_001.ogg
+  close.ogg/.mp3 <- Interface Sounds / minimize_001.ogg
+  tick.ogg/.mp3 <- Interface Sounds / tick_001.ogg
+  click.ogg/.mp3 <- Interface Sounds / click_002.ogg
+  toggleOn.ogg/.mp3 <- Interface Sounds / toggle_001.ogg
+  toggleOff.ogg/.mp3 <- Interface Sounds / toggle_002.ogg
+  scan.ogg/.mp3 <- Interface Sounds / glass_001.ogg
+  discover.ogg/.mp3 <- Digital Audio / threeTone1.ogg
+  mapOpen.ogg/.mp3 <- Interface Sounds / maximize_003.ogg
+  mapClose.ogg/.mp3 <- Interface Sounds / minimize_003.ogg
+  zoom.ogg/.mp3 <- Interface Sounds / scroll_001.ogg
+  select.ogg/.mp3 <- Interface Sounds / select_002.ogg
+  warp.ogg/.mp3 <- Digital Audio / phaserUp6.ogg
+  warpHum.ogg/.mp3 <- Sci-Fi Sounds / spaceEngine_000.ogg
+  arrive.ogg/.mp3 <- Sci-Fi Sounds / lowFrequency_explosion_001.ogg
+  trade.ogg/.mp3 <- Interface Sounds / confirmation_001.ogg
+  tradeFail.ogg/.mp3 <- Interface Sounds / error_004.ogg
+  blip1.ogg/.mp3 <- Digital Audio / pepSound1.ogg
+  blip2.ogg/.mp3 <- Digital Audio / pepSound3.ogg
+  blip3.ogg/.mp3 <- Digital Audio / pepSound4.ogg
+  alien.ogg/.mp3 <- Sci-Fi Sounds / computerNoise_001.ogg
+  flyby.ogg/.mp3 <- Sci-Fi Sounds / engineCircular_000.ogg
+  warn.ogg/.mp3 <- Digital Audio / lowThreeTone.ogg
+  lowfuel.ogg/.mp3 <- Interface Sounds / bong_001.ogg
+  hot.ogg/.mp3 <- Interface Sounds / error_008.ogg
+  whoosh.ogg/.mp3 <- Sci-Fi Sounds / spaceEngineLow_002.ogg
+  cloak.ogg/.mp3 <- Digital Audio / phaseJump5.ogg
+  slow.ogg/.mp3 <- Digital Audio / zapThreeToneDown.ogg
+  board2.ogg/.mp3 <- Interface Sounds / switch_002.ogg
+  grapple.ogg/.mp3 <- Sci-Fi Sounds / laserRetro_000.ogg
+  auto.ogg/.mp3 <- Interface Sounds / confirmation_003.ogg
+deep.ogg/.mp3   <- Sci-Fi Sounds: spaceEngineLow_002.ogg (looped, played at 0.55x for the black-hole rumble) — CC0
+drill.ogg/.mp3  <- Sci-Fi Sounds: spaceEngineSmall_002.ogg (looped) — CC0
+dig.ogg/.mp3    <- Impact Sounds: impactMining_001.ogg — CC0
+build.ogg/.mp3  <- Impact Sounds: impactMetal_heavy_002.ogg — CC0
+hum.ogg/.mp3    <- Sci-Fi Sounds: spaceEngine_001.ogg (looped, colony / Dyson hum) — CC0
+seg.ogg/.mp3    <- Impact Sounds: impactPlate_light_002.ogg (Dyson segment clicks into place) — CC0
+dyson.ogg/.mp3  <- Digital Audio: powerUp9.ogg (Dyson stage complete) — CC0
