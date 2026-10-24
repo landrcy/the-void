@@ -71,9 +71,41 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   { const p0 = await page('sim'); await p0.evaluate(() => { localStorage.clear(); localStorage.setItem('void:intro', '1'); }); await p0.close();
     const p = await page('sim&fresh'); const r = await p.evaluate(() => { const V = VOID; V.game.clicked = true; for (let i = 0; i < 20 && V.game.state === 'title'; i++) V.stepSim(.5, 60); V.stepSim(.6, 60); const a = V.game.state; V.virtualKeys([' '], true); V.stepSim(1 / 60, 60); V.virtualKeys([' '], false); V.stepSim(.5, 60); return { before: a, after: V.game.state, mode: V.surface.mode }; });
     ok('crash cinematic can be skipped', r.before === 'cine' && r.after === 'surface', r); await p.close(); }
+  // 11: sound effects (assets/sfx.js)
+  { const dir = path.resolve(__dirname, '..', 'assets', 'sfx'); const files = fs.readdirSync(dir); const cred = fs.readFileSync(path.join(dir, 'CREDITS.txt'), 'utf8');
+    const p = await page('', 1280, 800, { wait: 2500 }); const r = await p.evaluate(() => { const S = VOID.sfx.state; return { list: S.LIST, loaded: Object.keys(S.buffers).length, total: S.total, errors: S.errors, ctx: S.ctx && S.ctx.state, loops: S.LIST.filter(n => S.buffers[n] && S.buffers[n].duration > 0).length }; });
+    const missing = r.list.filter(n => !files.includes(n + '.ogg') || !files.includes(n + '.mp3'));
+    ok('sfx: every sound in the load map has .ogg + .mp3 and credits are CC0', missing.length === 0 && /CC0/.test(cred) && /kenney\.nl\/assets/.test(cred) && r.list.length >= 40, { n: r.list.length, missing });
+    ok('sfx: all buffers preloaded and decoded headless without errors', r.loaded === r.total && r.errors.length === 0 && p.errs.length === 0, r); await p.close(); }
+  { const p = await page('sim&planet=earth&day', 1280, 800, { wait: 2500 }); const r = await p.evaluate(() => { const V = VOID, S = V.sfx.state; S.log.length = 0; V.prog.story.repaired = true;
+      V.stepSim(1, 60); V.virtualKeys(['ArrowRight'], true); V.stepSim(1.5, 60); V.virtualKeys([' '], true); V.stepSim(.2, 60); V.virtualKeys([' '], false); V.stepSim(1.5, 60); V.virtualKeys(['ArrowRight'], false);
+      V.virtualKeys(['q'], true); V.stepSim(.1, 60); V.virtualKeys(['q'], false); V.stepSim(.3, 60); V.prog.toggle('up'); V.stepSim(.3, 60); V.prog.toggle('up'); V.stepSim(.3, 60);
+      V.game.state = 'space'; V.space.enter({ fresh: true }); V.stepSim(.3, 60); V.virtualKeys(['ArrowUp'], true); V.stepSim(1, 60); const loopOn = !!(S.loops.thrust && S.loops.thrust.src); V.virtualKeys(['ArrowUp'], false); V.stepSim(2, 60); const loopOff = !(S.loops.thrust && S.loops.thrust.src);
+      V.music.setMuted(true); V.stepSim(.5, 60); const mg = S.master.gain.value; V.virtualKeys(['ArrowUp'], true); V.stepSim(.5, 60); const mutedLoop = !!(S.loops.thrust && S.loops.thrust.src); V.virtualKeys(['ArrowUp'], false); V.music.setMuted(false); V.stepSim(.5, 60);
+      return { log: S.log.slice(), loopOn, loopOff, mg: +mg.toFixed(4), mutedLoop, errors: S.errors, unmuted: +S.master.gain.value.toFixed(3) }; });
+    const has = n => r.log.some(l => l.indexOf(n) === 0);
+    ok('sfx: walking, jumping, landing, scan, panel open/close and thrust fire their sounds', has('step') && has('jump') && has('land') && has('scan') && has('open') && has('close') && has('thrust:loop'), r.log.slice(0, 30));
+    ok('sfx: thrust loop starts and stops cleanly', r.loopOn && r.loopOff, r);
+    ok('sfx: mute button silences sound effects (master 0, no loops)', r.mg < .01 && !r.mutedLoop && r.unmuted > .1 && r.errors.length === 0 && p.errs.length === 0, r); await p.close(); }
+  { const p = await page('nosfx&planet=earth', 1280, 800, { wait: 1200 }); const r = await p.evaluate(() => ({ ctx: !!VOID.sfx.state.ctx })); ok('sfx: ?nosfx disables audio without errors', !r.ctx && p.errs.length === 0, r); await p.close(); }
+  // 12: ship stages + fleet upgrades (assets/fleet.js)
+  { const p = await page('sim', 1280, 800, { wait: 1500 }); const r = await p.evaluate(() => { const V = VOID, Pg = V.prog, o = {}; V.game.state = 'space'; V.space.enter({ fresh: true }); Pg.story.repaired = true;
+      o.stages = []; for (let s = 0; s <= 4; s++) { Pg.setStage(s); V.stepSim(.2, 60); o.stages.push(Pg.shipStage()); }
+      const fl = ['frigate', 'cruiser', 'capital', 'mothership', 'engines', 'warp1', 'warp2', 'warp3', 'cargo', 'bubble', 'deflector', 'hangar', 'beams', 'refinery', 'colony', 'dyson'];
+      o.missing = fl.filter(k => !V.tips.UD[k]); fl.forEach(k => Pg.unlock(k)); V.stepSim(2, 60); Pg.toggle('up'); Pg.upTab = 'fleet'; V.stepSim(.3, 60); Pg.toggle('up'); Pg.toggle('admin'); V.stepSim(.3, 60); o.adm = Pg.regions.filter(r => r.id.indexOf('ah:') === 0).length; Pg.toggle('admin'); return o; });
+    ok('fleet: five ship stages, 16 fleet upgrades with tooltips, admin stage buttons, no errors', r.stages.join() === '0,1,2,3,4' && r.missing.length === 0 && r.adm === 5 && p.errs.length === 0, Object.assign(r, { errs: p.errs })); await p.close(); }
+  // 13: black holes + the Maw (assets/bhfx.js)
+  for (const [w, h] of [[1280, 800], [390, 844]]) { const p = await page('', w, h, { wait: 1500 }); const r = await p.evaluate(() => new Promise(res => { const V = VOID, Pg = V.prog; Pg.setStage(3); Pg.teleport('mega'); Pg.cheat.god = true;
+      let n = 0, t0 = performance.now(); (function f() { n++; const s = V.space.ship; s.vx = s.vy = 0; if (performance.now() - t0 < 2500) requestAnimationFrame(f); else res({ fps: n / 2.5, parts: V.bhfx.stats.parts, name: V.Gen.nameOf(V.bhfx.megaBody), st: V.game.state }); })(); }));
+    ok('black holes: the Maw renders at the galaxy centre with capped particles at ' + w + 'px, no errors', r.name === 'THE MAW' && r.parts > 100 && r.parts <= 2600 && r.fps > 20 && p.errs.length === 0, Object.assign(r, { errs: p.errs })); await p.close(); }
+  { const p = await page('sim', 1280, 800, { wait: 1500 }); const r = await p.evaluate(() => { const V = VOID, Pg = V.prog; Pg.story.repaired = true; Pg.setStage(1); V.game.state = 'space'; V.space.enter({ fresh: true }); V.stepSim(.2, 60);
+      const s = V.space.ship, M = V.bhfx.MEGA; V.bhfx.megaBodyGet(); s.x = M.x + M.r * 2; s.y = M.y; s.vx = s.vy = 0; V.stepSim(.1, 60); const pushed = Math.hypot(s.x - M.x, s.y - M.y) > M.r * 2;
+      Pg.setStage(3); V.bhfx.horizon(); V.stepSim(.2, 60); return { pushed, mega: Pg.story.mega, stage: Pg.shipStage(), home: Math.hypot(s.x, s.y) < 9000 }; });
+    ok('black holes: small hulls are pushed back by the Maw; falling through gives a new hull and exits near home', r.pushed && r.mega && r.stage === 4 && r.home && p.errs.length === 0, Object.assign(r, { errs: p.errs })); await p.close(); }
   // site size
   const du = (d) => fs.readdirSync(d, { withFileTypes: true }).reduce((s, e) => s + (e.isDirectory() ? du(path.join(d, e.name)) : fs.statSync(path.join(d, e.name)).size), 0);
   const size = du(path.resolve(__dirname, '..')); ok('site size under 8 MB', size < 8 * 1024 * 1024, (size / 1048576).toFixed(2) + ' MB');
+  { const cr = require('child_process').spawnSync(process.execPath, [path.join(__dirname, 'colony-test.js')], { encoding: 'utf8' }); const m = /(\d+) pass, (\d+) fail/.exec(cr.stdout || ''); ok('14. colonization suite (colony-test.js)', cr.status === 0, m ? m[0] : (cr.stdout + cr.stderr).slice(-300)); }
   await b.close(); fs.writeFileSync(path.join(__dirname, 'last-report.json'), JSON.stringify(res, null, 1));
   console.log(`\n${res.length - fail}/${res.length} passed`); process.exit(fail ? 1 : 0);
 })();

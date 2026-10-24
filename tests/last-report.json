@@ -297,7 +297,7 @@
   "name": "fps title",
   "pass": true,
   "info": {
-   "fps": 60.4,
+   "fps": 60.5,
    "core": 60,
    "state": "title"
   }
@@ -324,7 +324,7 @@
   "name": "fps gas",
   "pass": true,
   "info": {
-   "fps": 60.3,
+   "fps": 60.6,
    "core": 60,
    "state": "surface"
   }
@@ -333,7 +333,7 @@
   "name": "fps blackhole",
   "pass": true,
   "info": {
-   "fps": 60.3,
+   "fps": 60.6,
    "core": 60,
    "state": "space"
   }
@@ -477,8 +477,217 @@
   }
  },
  {
+  "name": "sfx: every sound in the load map has .ogg + .mp3 and credits are CC0",
+  "pass": true,
+  "info": {
+   "n": 63,
+   "missing": []
+  }
+ },
+ {
+  "name": "sfx: all buffers preloaded and decoded headless without errors",
+  "pass": true,
+  "info": {
+   "list": [
+    "step1",
+    "step2",
+    "step3",
+    "jump",
+    "land",
+    "thud",
+    "jet",
+    "thrust",
+    "laser",
+    "laserOn",
+    "mine",
+    "pickup",
+    "pickup2",
+    "part",
+    "board",
+    "exit",
+    "takeoff",
+    "touchdown",
+    "crash",
+    "rumble",
+    "repair",
+    "repaired",
+    "buy",
+    "deny",
+    "tier",
+    "open",
+    "close",
+    "tick",
+    "click",
+    "toggleOn",
+    "toggleOff",
+    "scan",
+    "discover",
+    "mapOpen",
+    "mapClose",
+    "zoom",
+    "select",
+    "warp",
+    "warpHum",
+    "arrive",
+    "trade",
+    "tradeFail",
+    "blip1",
+    "blip2",
+    "blip3",
+    "alien",
+    "flyby",
+    "warn",
+    "lowfuel",
+    "hot",
+    "whoosh",
+    "cloak",
+    "slow",
+    "board2",
+    "grapple",
+    "auto",
+    "deep",
+    "drill",
+    "dig",
+    "build",
+    "hum",
+    "seg",
+    "dyson"
+   ],
+   "loaded": 63,
+   "total": 63,
+   "errors": [],
+   "ctx": "running",
+   "loops": 63
+  }
+ },
+ {
+  "name": "sfx: walking, jumping, landing, scan, panel open/close and thrust fire their sounds",
+  "pass": true,
+  "info": [
+   "step2",
+   "step3",
+   "step1",
+   "jump",
+   "land",
+   "pickup",
+   "scan",
+   "open",
+   "close",
+   "thrust:loop"
+  ]
+ },
+ {
+  "name": "sfx: thrust loop starts and stops cleanly",
+  "pass": true,
+  "info": {
+   "log": [
+    "step2",
+    "step3",
+    "step1",
+    "jump",
+    "land",
+    "pickup",
+    "scan",
+    "open",
+    "close",
+    "thrust:loop"
+   ],
+   "loopOn": true,
+   "loopOff": true,
+   "mg": 0,
+   "mutedLoop": false,
+   "errors": [],
+   "unmuted": 0.5
+  }
+ },
+ {
+  "name": "sfx: mute button silences sound effects (master 0, no loops)",
+  "pass": true,
+  "info": {
+   "log": [
+    "step2",
+    "step3",
+    "step1",
+    "jump",
+    "land",
+    "pickup",
+    "scan",
+    "open",
+    "close",
+    "thrust:loop"
+   ],
+   "loopOn": true,
+   "loopOff": true,
+   "mg": 0,
+   "mutedLoop": false,
+   "errors": [],
+   "unmuted": 0.5
+  }
+ },
+ {
+  "name": "sfx: ?nosfx disables audio without errors",
+  "pass": true,
+  "info": {
+   "ctx": false
+  }
+ },
+ {
+  "name": "fleet: five ship stages, 16 fleet upgrades with tooltips, admin stage buttons, no errors",
+  "pass": true,
+  "info": {
+   "stages": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "missing": [],
+   "adm": 5,
+   "errs": []
+  }
+ },
+ {
+  "name": "black holes: the Maw renders at the galaxy centre with capped particles at 1280px, no errors",
+  "pass": true,
+  "info": {
+   "fps": 59.6,
+   "parts": 1556,
+   "name": "THE MAW",
+   "st": "space",
+   "errs": []
+  }
+ },
+ {
+  "name": "black holes: the Maw renders at the galaxy centre with capped particles at 390px, no errors",
+  "pass": true,
+  "info": {
+   "fps": 59.2,
+   "parts": 2000,
+   "name": "THE MAW",
+   "st": "space",
+   "errs": []
+  }
+ },
+ {
+  "name": "black holes: small hulls are pushed back by the Maw; falling through gives a new hull and exits near home",
+  "pass": true,
+  "info": {
+   "pushed": true,
+   "mega": true,
+   "stage": 4,
+   "home": true,
+   "errs": []
+  }
+ },
+ {
   "name": "site size under 8 MB",
   "pass": true,
-  "info": "4.58 MB"
+  "info": "6.10 MB"
+ },
+ {
+  "name": "14. colonization suite (colony-test.js)",
+  "pass": true,
+  "info": "18 pass, 0 fail"
  }
 ]
