@@ -115,8 +115,8 @@
   Pg.costRow = costRow;
   /* resource bar (top-left) */
   Pg.drawRes = function (g, x, y, compact) {
-    for (var i = 0; i < RES.length; i++) { var k = RES[i], n = Pg.res[k] || 0; if (compact && !n) continue; var fl = Pg.flashRes && Pg.flashRes[k] > 0; V.glyph(g, k, x, y, fl && (V.frame & 4) ? '#ffffff' : RCOL[k], '#05020d'); V.text(g, n, x + 6, y, '#efe6ff', '#05020d'); x += 8 + V.textW(n) + 3; }
-    var pc = Pg.partCount(); if (pc || !compact) { V.glyph(g, 'part', x, y, RCOL.part, '#05020d'); V.text(g, pc + '', x + 6, y, '#efe6ff', '#05020d'); x += 8 + V.textW(pc) + 3; }
+    for (var i = 0; i < RES.length; i++) { var k = RES[i], n = Pg.res[k] || 0; if (compact && !n) continue; if (Pg.softTip && V.tips) Pg.softTip('res:' + k, x - 1, y - 1, 8 + V.textW(n), 7, V.tips.res(k)); var fl = Pg.flashRes && Pg.flashRes[k] > 0; V.glyph(g, k, x, y, fl && (V.frame & 4) ? '#ffffff' : RCOL[k], '#05020d'); V.text(g, n, x + 6, y, '#efe6ff', '#05020d'); x += 8 + V.textW(n) + 3; }
+    var pc = Pg.partCount(); if (pc || !compact) { if (Pg.softTip && V.tips) Pg.softTip('res:part', x - 1, y - 1, 8 + V.textW(pc), 7, V.tips.res('part')); V.glyph(g, 'part', x, y, RCOL.part, '#05020d'); V.text(g, pc + '', x + 6, y, '#efe6ff', '#05020d'); x += 8 + V.textW(pc) + 3; }
     return x;
   };
 
@@ -132,7 +132,7 @@
       var list = UP.filter(function (u) { return u[1] === s[0]; }); g.fillStyle = '#2a0f4d'; g.fillRect(x0 + 4, y, pw - 8, 1); V.glyph(g, s[1], x0 + 3, y + 3, '#7a5ab0', '#05020d');
       for (var i = 0; i < list.length; i++) {
         var id = list[i][0], u = Pg.byId[id], cx = x0 + 10 + (i % cols) * cw, cy = y + 3 + Math.floor(i / cols) * chh, own = Pg.has(id), ok = Pg.canAfford(id) && Pg.reqMet(id), lockd = !Pg.reqMet(id);
-        var hov = Pg.btn('u:' + id, cx, cy, 20, chh - 2, (function (ii) { return function () { if (!Pg.has(ii) && Pg.buy(ii)) { Pg.buyFx = { id: ii, t: 0 }; } else Pg.denyT = { id: ii, t: .5 }; }; })(id), NAMES[id]);
+        var hov = Pg.btn('u:' + id, cx, cy, 20, chh - 2, (function (ii) { return function () { if (!Pg.has(ii) && Pg.buy(ii)) { Pg.buyFx = { id: ii, t: 0 }; } else Pg.denyT = { id: ii, t: .5 }; }; })(id), V.tips ? V.tips.upgrade(id) : NAMES[id]);
         g.fillStyle = own ? '#3a1a6a' : hov ? '#2a1450' : '#1a0c34'; g.fillRect(cx, cy, 20, 13); g.fillStyle = own ? '#c04df0' : ok ? '#7affe8' : '#3a2a60'; g.fillRect(cx, cy, 20, 1);
         var deny = Pg.denyT && Pg.denyT.id === id && Pg.denyT.t > 0, dx = deny ? Math.round(Math.sin(V.time * 60)) : 0;
         V.glyph(g, u.icon, cx + 7 + dx, cy + 4, own ? '#ffffff' : ok ? '#efe6ff' : '#7a6aa0', '#05020d');
@@ -143,8 +143,6 @@
       }
       y += Math.ceil(list.length / cols) * chh + 4;
     });
-    /* hovered cost in full */
-    if (Pg.hover && Pg.hover.id.indexOf('u:') === 0) { var hid = Pg.hover.id.slice(2), hu = Pg.byId[hid]; if (!Pg.has(hid)) { var cx2 = x0 + 6; g.fillStyle = '#12082a'; g.fillRect(x0 + 2, y0 + ph - 11, pw - 4, 9); costRow(g, hu.cost, cx2, y0 + ph - 10); } }
   };
 
   /* ---------- admin / cheat panel ---------- */
@@ -167,7 +165,7 @@
     Pg.iconBtn(g, 'ar:part', x + 16 + 5 * 14, y, 'part', RCOL.part, function () { var n = Pg.partCount(); Pg.parts['admin' + n] = 1; }, '+1 DRIVE PART');
     Pg.iconBtn(g, 'ar:all', x + 16 + 6 * 14, y, 'all', '#ffffff', function () { RES.forEach(function (k) { Pg.gain(k, 100); }); for (var i = 0; i < 3; i++) Pg.parts['admin' + i] = 1; }, '+100 ALL');
     y += 14; V.text(g, 'UPG', x, y + 3, '#7a6aa0');
-    var ux = x + 16, uy = y; UP.forEach(function (u, i) { var id = u[0], cx = ux + (i % 15) * 11, cy = uy + Math.floor(i / 15) * 11; Pg.btn('au:' + id, cx, cy, 10, 10, function () { Pg.unlock(id, !Pg.has(id)); if (id === 'universal' && Pg.has(id) && Pg.onUniversal) Pg.onUniversal(true); }, NAMES[id]); g.fillStyle = Pg.has(id) ? '#6a3ab0' : '#1a0c34'; g.fillRect(cx, cy, 10, 10); V.glyph(g, u[2], cx + 2, cy + 2, Pg.has(id) ? '#ffffff' : '#7a6aa0'); });
+    var ux = x + 16, uy = y; UP.forEach(function (u, i) { var id = u[0], cx = ux + (i % 15) * 11, cy = uy + Math.floor(i / 15) * 11; Pg.btn('au:' + id, cx, cy, 10, 10, function () { Pg.unlock(id, !Pg.has(id)); if (id === 'universal' && Pg.has(id) && Pg.onUniversal) Pg.onUniversal(true); }, V.tips ? V.tips.adminUp(id) : NAMES[id]); g.fillStyle = Pg.has(id) ? '#6a3ab0' : '#1a0c34'; g.fillRect(cx, cy, 10, 10); V.glyph(g, u[2], cx + 2, cy + 2, Pg.has(id) ? '#ffffff' : '#7a6aa0'); });
     Pg.iconBtn(g, 'au:all', x + pw - 26, y + 22, 'all', '#ffffff', function () { var all = UP.every(function (u) { return Pg.has(u[0]); }); UP.forEach(function (u) { Pg.unlock(u[0], !all); }); if (!all && Pg.onUniversal) Pg.onUniversal(true); }, 'ALL UPGRADES');
     y += 36;
     /* toggles */

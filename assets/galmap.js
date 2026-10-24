@@ -30,6 +30,17 @@
   function canAuto(t) { var sh = Sp.ship, d = Math.hypot(t.x - sh.x, t.y - sh.y); if (!Pg.has('autopilot')) return false; if (!Pg.has('universal') && Math.hypot(t.x, t.y) > G.HOME_EDGE) return false; return d < G.CELL * 4.5; }
   function go() { var t = GM.sel; if (!t) return; if (canAuto(t)) { Sp.auto = { x: t.x, y: t.y }; Sp.mapOpen = false; V.game.toast('AUTOPILOT'); return; } var j = canJump(t); if (j) { Sp.mapOpen = false; var dest = t; if (t.kind === 'point') { var ci = G.cellIndex(t.x), cj = G.cellIndex(t.y), best = null; for (var r = 0; r < 4 && !best; r++) for (var j2 = -r; j2 <= r; j2++) for (var i = -r; i <= r; i++) { var p = G.peek(ci + i, cj + j2); if (p && !best) best = p; } if (best) dest = { x: best.x + 700, y: best.y - 260 }; } else dest = { x: t.x + (t.r ? t.r + 400 : 700), y: t.y - 200 }; V.story.warpTo(dest, true); return; } GM.deny = .5; }
   GM.go = go;
+  GM.canInfo = function (t) { return { auto: canAuto(t), jump: canJump(t) }; };
+  var PINW = { pin: ['Your pin', 'A spot you marked.'], bh: ['Sage\'s pin', 'The sage pointed you to a dark star here.'], gift: ['Swarm cache', 'The drone swarm left a gift here.'] };
+  function distTxt(x, y) { var sh = Sp.ship, d = Math.hypot(x - sh.x, y - sh.y) / G.CELL; return d < .5 ? 'In this system' : d < 1 ? 'Next door' : d.toFixed(d < 10 ? 1 : 0) + ' sectors away'; }
+  function goNote(c) { if (canAuto(c)) return 'Click, then Autopilot to fly there.'; var j = canJump(c); if (j) return 'Click, then Jump.'; return Pg.has('universal') ? 'Too far: needs Hyperspace or Galaxy Jump.' : (Math.hypot(c.x, c.y) > G.HOME_EDGE ? 'Beyond home: needs the Universal Drive.' : 'Fly there yourself, or build Autopilot.'); }
+  function candTip(c) {
+    if (c.kind === 'pin') { var w = PINW[c.pin.icon] || PINW.pin; return { t: w[0], d: w[1], s: distTxt(c.x, c.y), sc: 'dim', n: [goNote(c)] }; }
+    if (c.kind === 'body') { var b = c.body, o = { t: G.nameOf(b), d: V.themeName(b).toLowerCase().replace(/^./, function (m) { return m.toUpperCase(); }), s: (V.game.visited && V.game.visited[b.id] ? 'Visited · ' : '') + distTxt(c.x, c.y), sc: 'dim', n: [] };
+      if (b.isStar || b.isBH) o.n.push(b.isBH ? 'Do not fall in without Hole Surfing.' : 'Too hot to land.'); else if ((b.type === 'gas' || b.type === 'icegas' || b.huge) && !Pg.has('gear')) o.n.push('Landing needs Landing Gear.'); else o.n.push('Fly close and press E to land.'); return o; }
+    return { t: c.known ? 'Star system' : 'Unknown system', d: c.known ? 'A discovered system.' : 'Not discovered yet. Fly near it or scan.', s: distTxt(c.x, c.y), sc: c.known ? 'ok' : 'dim', n: [goNote(c)] };
+  }
+
   function toScreen(x, y, s) { return [Math.round((x - GM.cx) / s + V.W / 2), Math.round((y - GM.cy) / s + V.H / 2)]; }
   function cellPx(s) { return G.CELL / s; }
   GM.draw = function (g, dt) {
@@ -71,6 +82,9 @@
     if (Sp.auto) { var ap = toScreen(Sp.auto.x, Sp.auto.y, s); V.glyph(g, 'auto', ap[0] - 2, ap[1] - 8, '#7affe8', '#05020d'); }
     /* pins, home, you */
     Pg.pins.forEach(function (p) { var pp = toScreen(p.x, p.y, s); if (pp[0] < 2 || pp[1] < 2 || pp[0] > W - 6 || pp[1] > H - 6) return; V.glyph(g, p.icon === 'pin' ? 'pin' : p.icon, pp[0] - 2, pp[1] - 6, '#ffe07a', '#05020d'); g.fillStyle = '#ffe07a'; g.fillRect(pp[0], pp[1], 1, 1); cands.push({ x: p.x, y: p.y, sx: pp[0], sy: pp[1], kind: 'pin', pin: p, known: true }); });
+    /* hover tips for systems, bodies and pins */
+    if (Pg.softTip) cands.forEach(function (c) { Pg.softTip('gmc:' + c.kind + ':' + Math.round(c.x) + ',' + Math.round(c.y), c.sx - 3, c.sy - (c.kind === 'pin' ? 7 : 3), 7, c.kind === 'pin' ? 9 : 7, function () { return candTip(c); }); });
+    Pg.softTip && Pg.softTip('gmc:you', shp[0] - 3, shp[1] - 3, 7, 7, { t: 'You', d: 'Your ship.' });
     var hm = toScreen(0, 0, s); if (hm[0] > 3 && hm[1] > 3 && hm[0] < W - 3 && hm[1] < H - 3 && s > 60) { g.fillStyle = '#c04df0'; g.fillRect(hm[0] - 2, hm[1] - 2, 5, 1); g.fillRect(hm[0] - 2, hm[1] + 2, 5, 1); g.fillRect(hm[0] - 2, hm[1] - 2, 1, 5); g.fillRect(hm[0] + 2, hm[1] - 2, 1, 5); }
     if (Math.floor(V.time * 3) % 3) { g.fillStyle = '#ffffff'; g.fillRect(shp[0] - 1, shp[1], 3, 1); g.fillRect(shp[0], shp[1] - 1, 1, 3); }
     /* scale bar: little dots, one per order of magnitude */

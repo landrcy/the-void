@@ -72,9 +72,9 @@
   function hail(e) {
     var h = A.hail; if (h && h.e === e && h.act) { if (!h.cost || Pg.affordCost(h.cost)) { h.act(); A.hail = null; hail(e); A.hail.ok = .5; if (V.save) V.save.write(); } else h.deny = .4; return; }
     var s = Pg.npc[e.id] || (Pg.npc[e.id] = {}), d = { e: e, t: 0, icons: [], words: '' };
-    if (e.kind === 'mother') { var o = MOFFERS[(s.k || 0) % 3]; for (var k in o[0]) d.icons.push({ g: k, n: o[0][k], c: Pg.RCOL[k] }); d.icons.push({ g: 'trade', c: '#ffe07a' }, { g: o[1], n: o[2], c: Pg.RCOL[o[1]] }); d.words = 'WELCOME TRAVELER'; d.cost = o[0]; d.act = function () { Pg.spend(o[0]); Pg.gain(o[1], o[2]); s.k = (s.k || 0) + 1; }; }
-    else if (e.kind === 'swarm') { if (e.st === 0 && !Pg.got['cache:' + e.id]) { d.icons = [{ g: 'follow', c: '#7affe8' }, { g: 'gift', c: '#ffe07a' }]; d.words = 'FOLLOW US'; e.st = 1; var tx = e.hx + Math.cos(e.cacheA) * 2600, ty = e.hy + Math.sin(e.cacheA) * 2600; Pg.pin(tx, ty, 'gift', 'cache:' + e.id); } else { d.icons = [{ g: 'smile' }, { g: 'heart', c: '#ff8ae8' }]; d.words = 'BZZ'; } }
-    else if (e.kind === 'ark') { if (!Pg.got['ark:' + e.id]) { d.icons = [{ g: 'wrench', c: '#ffc070' }, { g: 'scrap', n: 6, c: Pg.RCOL.scrap }, { g: 'tech', n: 2, c: Pg.RCOL.tech }, { g: 'part', n: 1, c: Pg.RCOL.part }]; d.words = 'SILENT. EMPTY'; d.act = function () { Pg.got['ark:' + e.id] = 1; Pg.gain('scrap', 6); Pg.gain('tech', 2); Pg.parts['ark:' + e.id] = 1; V.game.toast('SALVAGE'); }; } else { d.icons = [{ g: 'check', c: '#7aff8a' }]; d.words = 'NOTHING LEFT'; } }
+    if (e.kind === 'mother') { var o = MOFFERS[(s.k || 0) % 3]; for (var k in o[0]) d.icons.push({ g: k, n: o[0][k], c: Pg.RCOL[k] }); d.icons.push({ g: 'trade', c: '#ffe07a' }, { g: o[1], n: o[2], c: Pg.RCOL[o[1]] }); d.words = 'WELCOME TRAVELER'; d.cost = o[0]; d.gain = {}; d.gain[o[1]] = o[2]; d.desc = 'Trade with the mothership. The offer changes after each deal.'; d.act = function () { Pg.spend(o[0]); Pg.gain(o[1], o[2]); s.k = (s.k || 0) + 1; }; }
+    else if (e.kind === 'swarm') { if (e.st === 0 && !Pg.got['cache:' + e.id]) { d.icons = [{ g: 'follow', c: '#7affe8' }, { g: 'gift', c: '#ffe07a' }]; d.words = 'FOLLOW US'; d.desc = 'Follow the swarm to a cache. It is pinned on your map.'; d.gain = { tech: 3, essence: 2 }; e.st = 1; var tx = e.hx + Math.cos(e.cacheA) * 2600, ty = e.hy + Math.sin(e.cacheA) * 2600; Pg.pin(tx, ty, 'gift', 'cache:' + e.id); } else { d.icons = [{ g: 'smile' }, { g: 'heart', c: '#ff8ae8' }]; d.words = 'BZZ'; d.desc = 'The swarm is leading you, or already did.'; } }
+    else if (e.kind === 'ark') { if (!Pg.got['ark:' + e.id]) { d.icons = [{ g: 'wrench', c: '#ffc070' }, { g: 'scrap', n: 6, c: Pg.RCOL.scrap }, { g: 'tech', n: 2, c: Pg.RCOL.tech }, { g: 'part', n: 1, c: Pg.RCOL.part }]; d.words = 'SILENT. EMPTY'; d.desc = 'Salvage the empty ark, once.'; d.gain = { scrap: 6, tech: 2, part: 1 }; d.act = function () { Pg.got['ark:' + e.id] = 1; Pg.gain('scrap', 6); Pg.gain('tech', 2); Pg.parts['ark:' + e.id] = 1; V.game.toast('SALVAGE'); }; } else { d.icons = [{ g: 'check', c: '#7aff8a' }]; d.words = 'NOTHING LEFT'; d.desc = 'Already salvaged.'; } }
     A.hail = d;
   }
   /* ---------- sprites ---------- */
@@ -98,21 +98,23 @@
       var sp = sprite(e.kind, e.kind === 'crystal' ? Math.floor(t * 3) % 6 : f); if (ex + sp.width < 0 || ex - sp.width > W || ey + sp.height < 0 || ey - sp.height > H) continue;
       var bob = e.kind === 'mother' ? Math.round(Math.sin(t * .8) * 2) : 0; g.drawImage(sp, ex - (sp.width >> 1), ey - (sp.height >> 1) + bob);
       if (e.kind === 'mother' && (Math.floor(t * 1.5) & 1)) { g.fillStyle = '#7affe8'; for (var b = 0; b < 3; b++) g.fillRect(ex - 1 + b, ey + 16 + b * 2, 1, 1); }
-      if (e.kind === 'crystal' && e.esc > .3) bubble(g, ex, ey - 20, [{ g: 'away', c: '#9af0ff' }], '', null, 0);
+      if (e.kind === 'crystal' && e.esc > .3) bubble(g, ex, ey - 20, [{ g: 'away', c: '#9af0ff' }], '', null, 0, 'al:' + e.id, 'crystal', { desc: 'A territorial crystal vessel. It escorts you away from its space, never attacks.', n: ['Cloak makes it ignore you.'] });
     }
     if (A.drone) { var dx = Math.round(A.drone.x - cx + W / 2), dy = Math.round(A.drone.y - cy + H / 2); g.fillStyle = '#c8c8d8'; g.fillRect(dx - 1, dy, 3, 1); g.fillRect(dx, dy - 1, 1, 3); g.fillStyle = (Math.floor(t * 8) & 1) ? '#7affe8' : '#ffffff'; g.fillRect(dx, dy, 1, 1); }
     if (A.laser) { var lx = W / 2 + (sh.x - cx), ly = H / 2 + (sh.y - cy), n = Math.round(A.lasLen); for (var l = 12; l < n; l++) { if (V.bayer(l, Math.floor(t * 30)) < .2) continue; g.fillStyle = l % 3 ? '#ff4a8a' : '#ffffff'; g.fillRect(Math.round(lx + Math.cos(sh.ang) * l), Math.round(ly + Math.sin(sh.ang) * l), 1, 1); } if (A.lasHit) { var hx = Math.round(lx + Math.cos(sh.ang) * n), hy = Math.round(ly + Math.sin(sh.ang) * n); g.fillStyle = '#ffd060'; g.fillRect(hx - 1 + (Math.random() * 3 | 0), hy - 1 + (Math.random() * 3 | 0), 1, 1); } }
     for (i = A.fx.length - 1; i >= 0; i--) { var fx = A.fx[i]; fx.t += 1 / 60; if (fx.t > 1.2) { A.fx.splice(i, 1); continue; } V.glyph(g, fx.k, Math.round(fx.x - cx + W / 2) - 2, Math.round(fx.y - cy + H / 2 - fx.t * 14) - 2, Pg.RCOL[fx.k] || '#fff', '#05020d'); }
     if (A.hint && !A.hail && Sp.keyBox) { var he = A.hint.e, hx2 = Math.round(he.x - cx + W / 2), hy2 = Math.round(he.y - cy + H / 2) - (he.kind === 'mother' ? 26 : he.kind === 'ark' ? 22 : 24) - (Math.floor(t * 3) % 2); Sp.keyBox(g, hx2, hy2, 'E'); V.glyph(g, 'talk', hx2 + 9, hy2 - 2, '#7affe8', '#05020d'); }
-    if (A.hail) { var hh = A.hail, e2 = hh.e; bubble(g, Math.round(e2.x - cx + W / 2), Math.round(e2.y - cy + H / 2) - (e2.kind === 'mother' ? 22 : e2.kind === 'ark' ? 18 : 22), hh.icons, hh.words, hh.act ? (!hh.cost || Pg.affordCost(hh.cost)) : null, hh.deny); }
+    if (V.tips && Pg.softTip) for (i = 0; i < L.length; i++) { var e3 = L[i], q3 = sprite(e3.kind === 'swarm' ? 'mother' : e3.kind, 0), ex3 = Math.round(e3.x - cx + W / 2), ey3 = Math.round(e3.y - cy + H / 2); if (ex3 < -40 || ex3 > W + 40 || ey3 < -40 || ey3 > H + 40) continue; Pg.softTip('alien:' + e3.id, ex3 - (q3.width >> 1), ey3 - (q3.height >> 1), q3.width, q3.height, V.tips.alien(e3)); }
+    if (A.hail) { var hh = A.hail, e2 = hh.e; bubble(g, Math.round(e2.x - cx + W / 2), Math.round(e2.y - cy + H / 2) - (e2.kind === 'mother' ? 22 : e2.kind === 'ark' ? 18 : 22), hh.icons, hh.words, hh.act ? (!hh.cost || Pg.affordCost(hh.cost)) : null, hh.deny, 'al:' + e2.id, e2.kind, hh); }
   };
-  function bubble(g, sx, sy, toks, words, can, deny) {
+  function bubble(g, sx, sy, toks, words, can, deny, tid, kind, dd) {
     var W = V.W, wid = 4, i; for (i = 0; i < toks.length; i++) wid += 6 + (toks[i].n ? V.textW(String(toks[i].n)) + 1 : 0);
     var tr = Pg.has('translator') && words, tw = tr ? V.textW(words) + 4 : 0, bw = Math.max(wid + (can != null ? 15 : 0), tw), bh = tr ? 17 : 10, sh = deny > 0 ? Math.round(Math.sin(deny * 60) * 2) : 0, x0 = clamp(sx - (bw >> 1), 2, W - bw - 2) + sh, y0 = sy - bh;
     g.fillStyle = '#9af0ff'; g.fillRect(x0 - 1, y0 - 1, bw + 2, bh + 2); g.fillStyle = '#0a1428'; g.fillRect(x0, y0, bw, bh); g.fillStyle = '#9af0ff'; g.fillRect(sx - 1, y0 + bh + 1, 3, 1); g.fillRect(sx, y0 + bh + 2, 1, 1);
     var x = x0 + 3; for (i = 0; i < toks.length; i++) { var tk = toks[i]; V.glyph(g, tk.g, x, y0 + 3, tk.c || '#efe6ff'); x += 6; if (tk.n) { V.text(g, String(tk.n), x - 1, y0 + 4, '#efe6ff'); x += V.textW(String(tk.n)) + 1; } }
     if (can != null) { var kx = x0 + bw - 12; V.glyph(g, can ? 'check' : 'cross', kx + 6, y0 + 3, can ? '#7aff8a' : '#ff6a6a'); if (can) V.text(g, 'E', kx, y0 + 3, '#ffffff'); }
     if (tr) V.text(g, words, x0 + 2, y0 + 11, '#a8f0d8');
+    if (tid && V.tips) V.tips.bubbleAt(tid, x0 - 1, y0 - 1, bw + 2, bh + 4, kind, dd);
   }
   A.bubble = bubble;
   /* markers for aliens you have seen */

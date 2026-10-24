@@ -98,27 +98,27 @@
     var s = npcState(n), d = { icons: [], words: '', act: null, done: false };
     switch (n.kind) {
       case 'villager':
-        if (s.q === 2) { d.icons = [T('smile'), T('heart', 0, '#ff6a8a')]; d.words = 'FRIEND'; break; }
-        d.icons = [T('quest', 0, '#ffe07a')].concat([T('crystal', 3, RCOL.crystal), T('arrow'), T('tech', 2, RCOL.tech)]); d.words = 'BRING CRYSTALS';
+        if (s.q === 2) { d.icons = [T('smile'), T('heart', 0, '#ff6a8a')]; d.words = 'FRIEND'; d.desc = 'You helped this village. They are glad to see you.'; break; }
+        d.icons = [T('quest', 0, '#ffe07a')].concat([T('crystal', 3, RCOL.crystal), T('arrow'), T('tech', 2, RCOL.tech)]); d.words = 'BRING CRYSTALS'; d.desc = 'Quest: bring 3 crystals and get 2 tech.'; d.gain = { tech: 2 };
         d.cost = { crystal: 3 }; d.act = function () { Pg.spend({ crystal: 3 }); give(w, n, 'tech', 2); s.q = 2; }; break;
       case 'nomad':
-        if (s.g) { var nu = nearestUngot(w, n.x); d.icons = [T('arrow', 0, '#7affe8'), nu ? T(nu.k, 0, RCOL[nu.k]) : T('smile')]; d.words = nu ? 'THAT WAY' : 'SAFE PATHS'; if (nu) { nu.reveal = 30; d.point = nu; } break; }
-        d.icons = [T('smile'), T('gift', 0, '#ffe07a'), T('ore', 2, RCOL.ore)]; d.words = 'WE WANDER. TAKE'; d.act = function () { give(w, n, 'ore', 2); s.g = 1; }; break;
+        if (s.g) { var nu = nearestUngot(w, n.x); d.icons = [T('arrow', 0, '#7affe8'), nu ? T(nu.k, 0, RCOL[nu.k]) : T('smile')]; d.words = nu ? 'THAT WAY' : 'SAFE PATHS'; d.desc = nu ? 'Points the way to the nearest pickup.' : 'Nothing left nearby.'; if (nu) { nu.reveal = 30; d.point = nu; } break; }
+        d.icons = [T('smile'), T('gift', 0, '#ffe07a'), T('ore', 2, RCOL.ore)]; d.words = 'WE WANDER. TAKE'; d.desc = 'A free gift of 2 ore.'; d.gain = { ore: 2 }; d.act = function () { give(w, n, 'ore', 2); s.g = 1; }; break;
       case 'robot':
-        d.icons = [T('scrap', 4, RCOL.scrap), T('trade', 0, '#ffe07a'), T('tech', 1, RCOL.tech)]; d.words = 'BEEP. TRADE'; d.cost = { scrap: 4 }; d.act = function () { Pg.spend({ scrap: 4 }); give(w, n, 'tech', 1); }; break;
+        d.icons = [T('scrap', 4, RCOL.scrap), T('trade', 0, '#ffe07a'), T('tech', 1, RCOL.tech)]; d.words = 'BEEP. TRADE'; d.desc = 'Trade 4 scrap for 1 tech. Repeatable.'; d.gain = { tech: 1 }; d.cost = { scrap: 4 }; d.act = function () { Pg.spend({ scrap: 4 }); give(w, n, 'tech', 1); }; break;
       case 'glow':
-        if (s.g) { d.icons = [T('heart', 0, '#ff8ae8'), T('star', 0, '#ffe07a')]; d.words = 'WE ARE LIGHT'; break; }
-        d.icons = [T('essence', 1, RCOL.essence), T('heart', 0, '#ff8ae8')]; d.words = 'A GIFT OF LIGHT'; d.act = function () { give(w, n, 'essence', 1); s.g = 1; }; break;
+        if (s.g) { d.icons = [T('heart', 0, '#ff8ae8'), T('star', 0, '#ffe07a')]; d.words = 'WE ARE LIGHT'; d.desc = 'They already gave you their light.'; break; }
+        d.icons = [T('essence', 1, RCOL.essence), T('heart', 0, '#ff8ae8')]; d.words = 'A GIFT OF LIGHT'; d.desc = 'A free gift of 1 essence.'; d.gain = { essence: 1 }; d.act = function () { give(w, n, 'essence', 1); s.g = 1; }; break;
       case 'merchant':
-        var o = OFFERS[(s.k || 0) % OFFERS.length]; d.icons = costTok(o[0]).concat([T('trade', 0, '#ffe07a'), T(o[1], o[2], RCOL[o[1]])]); d.words = 'FAIR TRADE'; d.cost = o[0];
+        var o = OFFERS[(s.k || 0) % OFFERS.length]; d.icons = costTok(o[0]).concat([T('trade', 0, '#ffe07a'), T(o[1], o[2], RCOL[o[1]])]); d.words = 'FAIR TRADE'; d.cost = o[0]; d.gain = {}; d.gain[o[1]] = o[2]; d.desc = 'A trade. The offer changes after each deal.';
         d.act = function () { Pg.spend(o[0]); give(w, n, o[1], o[2]); s.k = (s.k || 0) + 1; }; break;
       case 'sage':
-        if (s.g) { d.icons = [T('eye', 0, '#c8a8ff'), T('pin', 0, '#ffe07a')]; d.words = 'FOLLOW THE PIN'; break; }
-        d.icons = [T('eye', 0, '#c8a8ff'), T('bh', 0, '#c04df0'), T('pin', 0, '#ffe07a')]; d.words = 'SEEK THE DARK STAR';
+        if (s.g) { d.icons = [T('eye', 0, '#c8a8ff'), T('pin', 0, '#ffe07a')]; d.words = 'FOLLOW THE PIN'; d.desc = 'Follow the pin on your map.'; break; }
+        d.icons = [T('eye', 0, '#c8a8ff'), T('bh', 0, '#c04df0'), T('pin', 0, '#ffe07a')]; d.words = 'SEEK THE DARK STAR'; d.desc = 'Puts a pin on a distant black hole for you.';
         d.act = function () { var bx = w.body.x, by = w.body.y, f = G.find('bh', bx + G.CELL * 2, by) || G.find('ringworld', bx + G.CELL * 2, by); if (f) { Pg.pin(f.body.x, f.body.y, 'bh', 'sage:' + f.body.id); V.game.toast('PINNED'); } s.g = 1; if (V.save) V.save.write(); }; break;
       case 'mechanic':
-        if (s.g) { d.icons = [T('wrench', 0, '#ffc070'), T('smile')]; d.words = 'FLY SAFE'; break; }
-        var hasPart = w.body.mars; d.icons = [T('wrench', 0, '#ffc070'), hasPart ? T('part', 0, RCOL.part) : T('up2', 0, '#7affe8')]; d.words = hasPart ? 'A DRIVE PART' : 'FREE TUNE UP';
+        if (s.g) { d.icons = [T('wrench', 0, '#ffc070'), T('smile')]; d.words = 'FLY SAFE'; d.desc = 'Already helped you.'; break; }
+        var hasPart = w.body.mars; d.icons = [T('wrench', 0, '#ffc070'), hasPart ? T('part', 0, RCOL.part) : T('up2', 0, '#7affe8')]; d.words = hasPart ? 'A DRIVE PART' : 'FREE TUNE UP'; d.desc = hasPart ? 'Gives you a Universal Drive part.' : 'Installs a free basic upgrade.'; if (hasPart) d.gain = { part: 1 };
         d.act = function () { if (hasPart) { Pg.parts['mars'] = 1; Su.floats.push({ x: n.x, y: gAt(w, n.x) + 22, t: 0, icon: 'part' }); } else { var free = Pg.UP.filter(function (u) { return u[1] !== 'adv' && !Pg.has(u[0]); }); if (free.length) { Pg.unlock(free[0][0]); Su.floats.push({ x: n.x, y: gAt(w, n.x) + 22, t: 0, icon: free[0][2] }); } } s.g = 1; if (V.save) V.save.write(); }; break;
     }
     return d;
@@ -213,6 +213,7 @@
     if (d.act) { var kx = x0 + bw - 12; V.glyph(g, can ? 'check' : 'cross', kx + 6, y0 + 3, can ? '#7aff8a' : '#ff6a6a'); if (can) V.text(g, 'E', kx, y0 + 3, '#ffffff'); }
     if (tr) V.text(g, d.words, x0 + 2, y0 + 11, '#a8f0d8');
     if (b.ok > 0) { g.fillStyle = '#7aff8a'; g.fillRect(x0, y0 + bh - 1, Math.round(bw * b.ok * 2), 1); }
+    if (V.tips) V.tips.bubbleAt('npc:' + n.id, x0 - 1, y0 - 1, bw + 2, bh + 4, n.kind, d);
   }
   var oldOv = Su.drawOverlay;
   Su.drawOverlay = function (g) {
